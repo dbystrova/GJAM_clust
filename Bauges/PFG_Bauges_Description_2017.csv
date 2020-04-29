@@ -1,0 +1,126 @@
+CODE_CBNA	PFG	species	TO_REMOVE
+10512	C1	Clematis vitalba L.	0
+11102	C1	Crataegus monogyna Jacq.	0
+40623	C1	Rubus fruticosus groupe	0
+4837	C1	Lonicera xylosteum L.	0
+41214	C1	Cornus sanguinea L.	0
+721	C1	Hedera helix L.	0
+9387	C1	Ligustrum vulgare L.	0
+40566	C2	Vaccinium vitis-idaea L.	0
+5924	C2	Helianthemum nummularium (L.) Miller	0
+6422	C2	Arctostaphylos uva-ursi (L.) Sprengel	0
+6483	C2	Rhododendron ferrugineum L.	0
+6490	C2	Vaccinium myrtillus L.	0
+6492	C2	Vaccinium uliginosum L.	0
+9962	C2	Polygala chamaebuxus L.	0
+10106	H1	Polygonum viviparum L.	0
+11139	H1	Filipendula ulmaria (L.) Maxim.	0
+11225	H1	Potentilla erecta (L.) RÃ¤uschel	0
+11710	H1	Sanguisorba minor Scop.	0
+14054	H1	Carex panicea L.	0
+14797	H1	Gagea villosa (M. Bieb.) Sweet	0
+14965	H1	Gymnadenia conopsea (L.) R. Br. in Aiton fil.	0
+15630	H1	Briza media L.	0
+15654	H1	Bromus erectus Hudson	0
+2509	H1	Leontodon hispidus L.	0
+8207	H1	Geranium robertianum L.	0
+8459	H1	Ajuga reptans L.	0
+8742	H1	Salvia pratensis L.	0
+8863	H1	Teucrium chamaedrys L.	0
+10130	H2	Rumex arifolius All.	0
+10845	H2	Trollius europaeus L.	0
+12696	H2	Rhinanthus alectorolophus (Scop.) Pollich	0
+14098	H2	Carex sempervirens Vill. subsp. sempervirens	0
+15465	H2	Anthoxanthum odoratum L.	0
+16219	H2	Festuca rubra L.	0
+16538	H2	Nardus stricta L.	0
+190	H2	Astrantia major L.	0
+419	H2	Heracleum sphondylium L.	0
+4759	H2	Phyteuma orbiculare L.	0
+5399	H2	Silene dioica (L.) Clairv.	0
+561	H2	Pimpinella major (L.) Hudson	0
+6273	H2	Knautia arvensis (L.) Coulter	0
+7378	H2	Onobrychis montana DC.	0
+8218	H2	Geranium sylvaticum L.	0
+10182	H3	Rumex pseudalpinus	0
+13924	H3	Carex ferruginea Scop.	0
+16860	H3	Sesleria caerulea (L.) Ard.	0
+2548	H3	Leucanthemum adustum (Koch) Gremli	0
+7590	H3	Trifolium badium Schreber	0
+8059	H3	Gentiana lutea L.	0
+9618	H3	Plantago atrata Hoppe subsp. atrata	0
+10328	H4	Lysimachia vulgaris L.	0
+1535	H4	Cirsium palustre (L.) Scop.	0
+15624	H4	Brachypodium rupestre (Host) Roemer & Schultes	0
+16676	H4	Phragmites australis (Cav.) Steudel	0
+2957	H4	Solidago gigantea Aiton	0
+8613	H4	Mentha aquatica L. subsp. aquatica	0
+8697	H4	Origanum vulgare L. subsp. vulgare	0
+10590	H5	Pulsatilla alpina (L.) Delarbre	0
+10799	H5	Ranunculus tuberosus Lapeyr.	0
+13153	H5	Valeriana montana L.	0
+1388	H5	Centaurea uniflora Turra subsp. nervosa (Willd.) Bonnier & Layens	0
+14607	H5	Juncus filiformis L.	0
+14713	H5	Luzula sieberi Tausch	0
+15246	H5	Traunsteinera globosa (L.) Reichenb.	0
+15851	H5	Deschampsia flexuosa (L.) Trin.	0
+2393	H5	Homogyne alpina (L.) Cass.	0
+294	H5	Chaerophyllum hirsutum L.	0
+2942	H5	Serratula tinctoria L.	0
+40190	H5	Carduus defloratus L. subsp. defloratus	0
+449	H5	Laserpitium latifolium L.	0
+4691	H5	Campanula rhomboidalis L.	0
+6207	H5	Sempervivum tectorum L.	0
+6285	H5	Knautia dipsacifolia Kreutzer	0
+8077	H5	Gentiana purpurea L.	0
+8244	H5	Globularia nudicaulis L.	0
+8353	H5	Hypericum richeri Vill.	0
+902	H5	Arnica montana L.	0
+9021	H5	Linum alpinum Jacq.	0
+9271	H5	Epilobium angustifolium L.	0
+11057	H6	Aruncus dioicus (Walter) Fernald	0
+11874	H6	Galium odoratum (L.) Scop.	0
+12264	H6	Saxifraga rotundifolia L.	0
+16372	H6	Hordelymus europaeus (L.) C.O. Harz	0
+16504	H6	Melica uniflora Retz.	0
+17589	H6	Dryopteris filix-mas (L.) Schott	0
+17798	H6	Athyrium filix-femina (L.) Roth	0
+2144	H6	Hieracium murorum L.	0
+2740	H6	Prenanthes purpurea L.	0
+3941	H6	Cardamine pentaphyllos (L.) Crantz	0
+4776	H6	Phyteuma spicatum L.	0
+6653	H6	Mercurialis perennis L.	0
+8563	H6	Lamium galeobdolon (L.) L. subsp. montanum (Pers.) Hayek	0
+11151	H7	Fragaria vesca L.	0
+13120	H7	Urtica dioica L.	0
+15813	H7	Dactylis glomerata L.	0
+15840	H7	Deschampsia cespitosa (L.) P. Beauv. subsp. cespitosa	0
+16368	H7	Holcus lanatus L.	0
+40514	H7	Carex elata All.	0
+4692	H7	Campanula rotundifolia L.	0
+6529	H7	Euphorbia cyparissias L.	0
+6684	H7	Anthyllis vulneraria L.	0
+7033	H7	Hippocrepis comosa L.	0
+7107	H7	Lathyrus pratensis L.	0
+7147	H7	Lotus corniculatus L.	0
+7680	H7	Trifolium pratense L.	0
+9042	H7	Linum catharticum L.	0
+9655	H7	Plantago lanceolata L.	0
+13933	H8	Carex flacca Schreber	0
+14114	H8	Carex sylvatica Hudson	0
+14982	H8	Listera ovata (L.) R. Br.	0
+40603	H8	Thymus serpyllum groupe	0
+11726	P1	Sorbus aria (L.) Crantz	0
+11730	P1	Sorbus aucuparia L.	0
+40496	P1	Acer campestre L.	0
+11732	P2	Sorbus chamaemespilus (L.) Crantz	0
+17297	P2	Juniperus communis L.	0
+4839	P2	Sambucus nigra L.	0
+4847	P2	Viburnum lantana L.	0
+6077	P2	Corylus avellana L.	0
+17343	P3	Abies alba Miller	0
+23	P3	Acer pseudoplatanus L.	0
+17363	P4	Picea abies (L.) Karsten	0
+7895	P4	Fagus sylvatica L.	0
+3317	P5	Alnus alnobetula (Ehrh.) C. Koch subsp. alnobetula	0
+9369	P6	Fraxinus excelsior L.	0

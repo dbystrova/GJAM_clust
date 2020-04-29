@@ -1,0 +1,15 @@
+
+citEntry(entry = "Article",
+  title = "Generalized joint attribute modeling for biodiversity analysis: 
+  Median-zero, multivariate, multifarious data.",
+  author = c( person(c('James','S.'),'Clark',role=c('aut','cre'), email='jimclark@duke.edu'),
+              person('Diana', 'Nemergut'), 
+              person('Bijan','Seyednasrollah'),
+              person('Phillip','Turner'), 
+              person('Stacy','Zhang') ),
+  year = "2017",
+  journal = 'Ecological Monographs',
+  url = "http://sites.nicholas.duke.edu/clarklab/code/",
+  textVersion  = paste("Clark, J.S., D. Nemergut, B. Seyednasrollah,  P. Turner, and S. Zhang (2017).","Generalized joint attribute modeling for biodiversity analysis, Median-zero, multivariate, multifarious data. Ecological Monographs",
+          "87, 34-56")
+  )

@@ -1,0 +1,27 @@
+
+importFrom("Rcpp", "evalCpp")
+importFrom("grDevices", "pdf", "rgb", "colorRampPalette", "dev.copy2pdf",
+            "graphics.off")
+importFrom("MASS", "ginv", "isoMDS")
+importFrom("RANN", "nn2")
+importFrom("grDevices", "col2rgb", "dev.off")
+importFrom("graphics", "arrows", "barplot", "bxp", "strheight","strwidth")
+importFrom("graphics", "abline", "axis", "boxplot", "hist", "legend",
+            "lines", "mtext", "par", "plot", "points", "polygon",
+            "rect", "symbols", "text", "title")
+importFrom("stats", "aggregate", "as.dendrogram", "as.dist", "as.formula", "cor",
+            "cov", "cutree", "dendrapply", "density", "dist", "hclust",
+            "is.leaf", "lm", "median", "model.frame", "model.matrix",
+            "pnorm", "qnorm", "quantile", "rbeta", "rgamma", "rnorm",
+            "rpois", "runif", "sd", "contrasts", "dnorm", "rbinom", 
+           "relevel", "terms", "var")
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
+
+export(gjam, gjamSimData, gjamPlot, gjamTrimY, gjamCensorY, gjamDeZero, 
+       gjamReZero, gjamPredict, gjamSensitivity, gjamSpec2Trait, gjamIIE, gjamIIEplot, 
+       gjamOrdination, gjamPoints2Grid, gjamPriorTemplate)
+S3method(print, gjam)
+S3method(summary, gjam)
+
+useDynLib(gjam, .registration = TRUE)
+
