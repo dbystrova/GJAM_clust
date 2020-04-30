@@ -1,0 +1,4 @@
+fit_gjam.Rdata filter=lfs diff=lfs merge=lfs -text
+fit_gjamDP2.Rdata filter=lfs diff=lfs merge=lfs -text
+fit_gjamPY1.Rdata filter=lfs diff=lfs merge=lfs -text
+fit_gjamPY2.Rdata filter=lfs diff=lfs merge=lfs -text

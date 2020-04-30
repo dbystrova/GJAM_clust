@@ -70,6 +70,30 @@ columns<-1:ncol(Ydata_train)
 ycs<- sample(columns, 10)
 y_c_p <-columns[ !columns %in% ycs]
 
+
+##################################Species names and Functional groups #####################################
+#Preparing species functional groups 
+Species_names_groups<- read.csv("Bauges/PFG_Bauges_Description_2017.csv", sep="\t")
+true_names<- as.data.frame(names(table(Species_names_groups$PFG)))
+names(true_names)<- c("PFG")
+true_names$K_n<- 1:16
+Species_names_groups_num<- merge(Species_names_groups,true_names, by="PFG" )
+
+
+#Species_names_groups_num
+True_clustering<- tibble( CODE_CBNA =  colnames(Ydata)[1: (ncol(Ydata))])
+True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
+
+
+
+Colnames_Y<- merge(Colnames_Y,Species_names_groups_num [,c(2,3,5)], by ="CODE_CBNA" )
+Colnames_Y$species<- as.character(Colnames_Y$species)
+Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
+
+
+
+
+
 ## Load models
 fit_gjam<- load_object(paste0(folderpath,"fit_gjam.Rdata"))
 fit_gjamDP2<- load_object(paste0(folderpath,"fit_gjamDP2.Rdata"))
@@ -193,7 +217,7 @@ tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
 tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
        PY2= fit_gjamPY2$chains$alpha.PY_g) %>%
   ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title="Traceplots of the concentration parameter DP2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
+  labs(title="Traceplots of the concentration parameter PY2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
@@ -205,7 +229,7 @@ tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
 tibble(it= 1: length(fit_gjamPY2$chains$discount.PY_g),
        PY2= fit_gjamPY2$chains$discount.PY_g) %>%
   ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title="Traceplots of the concentration parameter DP2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
+  labs(title="Traceplots of the sigma for PY2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
@@ -222,6 +246,9 @@ acfplot(alpha)
 cumuplot(alpha)
 
 #### Add prior/posterior plot
+
+
+
 
 
 
@@ -277,7 +304,181 @@ pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
 pl_weigths
 
 
+##################################Clustering #####################################
+
+
+relabel_clust<- function(Mat ){
+  Mat_new<- matrix(NA, nrow=nrow(Mat),ncol=ncol(Mat))
+  for(i in 1:nrow(Mat) ){
+    label<-unique(Mat[i,])
+    change<- label[which(label>ncol(Mat))]
+    all_n<- 1:ncol(Mat)
+    admis<- all_n[which(!(all_n %in% label))]
+    Mat_new[i,]<-Mat[i,]
+    if(length(change)>0){
+      for(k in 1:length(change)){
+        old_row<- Mat_new[i,]
+        rep <-old_row==change[k]
+        Mat_new[i,] <- replace(Mat_new[i,], rep, admis[k])
+      }
+    }
+  }
+  return(Mat_new)
+}
+
+
+
+gjamClust<- function(model, true_cl = True_clust$K_n){
+  if("other" %in% colnames(model$inputs$y)){
+    sp_num<- ncol(model$inputs$y)-1
+  } 
+  MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
+  tr_cl<- true_cl
+  CM_DP<-  comp.psm(MatDP)
+  mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
+  vi_DP.ext <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
+  return(list(Bind_est=mbind_DP.ext$cl[1,], VI_est = vi_DP.ext$cl[1,]))
+}
+
+DP_clust<- gjamClust(model= fit_gjam)
+DP2_clust<- gjamClust(model= fit_gjamDP2)
+PY1_clust<- gjamClust(model= fit_gjamPY1)
+PY2_clust<- gjamClust(model= fit_gjamPY2)
+
+
+#### Compare the obtained estimates with the PFG clusters
+
+
+BI_fin_table_K<- tibble(GJAM = length(unique(DP_clust$Bind_est)),GJAM2=length(unique(DP2_clust$Bind_est)),PY1=length(unique(PY1_clust$Bind_est)),PY2=length(unique(PY2_clust$Bind_est)))
+BI_fin_table_VIdist<- tibble(GJAM = vi.dist(DP_clust$Bind_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$Bind_est, True_clust$K_n),PY1= vi.dist(PY1_clust$Bind_est, True_clust$K_n),PY2 = vi.dist(PY2_clust$Bind_est, True_clust$K_n))
+BI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$Bind_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$Bind_est, True_clust$K_n),PY1 = arandi(PY1_clust$Bind_est, True_clust$K_n),PY2 = arandi(PY2_clust$Bind_est, True_clust$K_n))
+
+
+VI_fin_table_K<-tibble(GJAM = length(unique(DP_clust$VI_est)),GJAM2=length(unique(DP2_clust$VI_est)),PY1=length(unique(PY1_clust$VI_est)),PY2=length(unique(PY2_clust$VI_est)))
+VI_fin_table_VIdist<-  tibble(GJAM = vi.dist(DP_clust$VI_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust$VI_est, True_clust$K_n),PY2 = vi.dist(PY2_clust$VI_est, True_clust$K_n))
+VI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$VI_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$VI_est, True_clust$K_n),PY1 = arandi(PY1_clust$VI_est, True_clust$K_n),PY2 = arandi(PY2_clust$VI_est, True_clust$K_n))
+
+
+
+
+
+### Old style###############################################################################################################
+sp_num<- ncol(Ydata)-1
+MatDP<- relabel_clust(fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:sp_num])
+MatDP2<- relabel_clust(fit_gjamDP2$chains$kgibbs[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng,1:sp_num])
+MatPY1<- relabel_clust(fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:sp_num])
+MatPY2<- relabel_clust(fit_gjamPY2$chains$kgibbs[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng,1:sp_num])
+
+### Obtain Posterior similarity matrices
+tr_cl<-True_clust$K_n
+CM_DP<-  comp.psm(MatDP)
+CM_DP2<- comp.psm(MatDP2)
+CM_PY1<- comp.psm(MatPY1)
+CM_PY2<- comp.psm(MatPY2)
+
+mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
+mbind_DP2.ext <- minbinder.ext(CM_DP2,MatDP2, method="all",include.greedy = TRUE)
+mbind_PY1.ext <- minbinder.ext(CM_PY1,MatPY1, method="all",include.greedy = TRUE)
+mbind_PY2.ext <- minbinder.ext(CM_PY2,MatPY2, method="all",include.greedy = TRUE)
+
+
+G_BI_cl_fin_table<- tibble(GJAM = t(c(length(unique(mbind_DP.ext$cl[1,])),length(unique(mbind_DP2.ext$cl[1,])),length(unique(mbind_PY1.ext$cl[1,])),length(unique(mbind_PY2.ext$cl[1,])))))
+names(G_BI_cl_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
+formattable(G_BI_cl_fin_table)
+
+
+Gbi.dist_DP<- vi.dist(mbind_DP.ext$cl[1,], tr_cl)
+Gbi.dist_DP2<- vi.dist(mbind_DP2.ext$cl[1,], tr_cl)
+Gbi.dist_PY1<- vi.dist(mbind_PY1.ext$cl[1,], tr_cl)
+Gbi.dist_PY2<- vi.dist(mbind_PY2.ext$cl[1,], tr_cl)
+BI_VIloss_fin_table<- as.data.frame(t(c(Gbi.dist_DP,Gbi.dist_DP2,Gbi.dist_PY1,Gbi.dist_PY2)))
+formattable(BI_VIloss_fin_table, "VI distance, binder loss")
+
+
+# compare clusterings found by different methods with true grouping for Binder loss
+Ar_D_DP<- arandi(mbind_DP.ext$cl[1,], tr_cl)
+#Ar_D_DP1<- arandi(mbind_DP1.ext$cl[1,], tr_cl)
+Ar_D_DP2<-arandi(mbind_DP2.ext$cl[1,], tr_cl)
+Ar_D_PY1<-arandi(mbind_PY1.ext$cl[1,], tr_cl)
+Ar_D_PY2<-arandi(mbind_PY2.ext$cl[1,], tr_cl)
+Ar_D_fin_table<- as.data.frame(t(c(Ar_D_DP,Ar_D_DP2,Ar_D_PY1,Ar_D_PY2)))
+names(Ar_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
+print(Ar_D_fin_table)
+formattable(Ar_D_fin_table, "R index distance, binder loss")
+
+
+
+################################### GREEEDY VI loss 
+G_vi_DP <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
+G_vi_DP2 <- minVI(CM_DP2,MatDP2, method="all", include.greedy = TRUE)
+G_vi_PY1 <- minVI(CM_PY1,MatPY1, method="all", include.greedy = TRUE, l=300)
+G_vi_PY2 <- minVI(CM_PY2,MatPY2, method="all", include.greedy = TRUE)
+
+G_VI_cl_fin_table<- as.data.frame(t(c(length(unique(G_vi_DP$cl[1,])),length(unique(G_vi_DP1$cl[1,])),length(unique(G_vi_DP2$cl[1,])),length(unique(G_vi_PY1$cl[1,])),length(unique(G_vi_PY2$cl[1,])))))
+names(G_VI_cl_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
+formattable(G_VI_cl_fin_table)
+
+
+Ar_VI_DP<- arandi(G_vi_DP$cl[1,], tr_cl)
+Ar_VI_DP1<- arandi(G_vi_DP1$cl[1,], tr_cl)
+Ar_VI_DP2<-arandi(G_vi_DP2$cl[1,], tr_cl)
+Ar_VI_PY1<-arandi(G_vi_PY1$cl[1,], tr_cl)
+Ar_VI_PY2<-arandi(G_vi_PY2$cl[1,], tr_cl)
+Ar_VI_fin_table<- as.data.frame(t(c(Ar_VI_DP,Ar_VI_DP1,Ar_VI_DP2,Ar_VI_PY1,Ar_VI_PY2)))
+names(Ar_VI_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
+formattable(Ar_VI_fin_table,"R index distances, VI loss")
+
+
+Gvi.dist_DP<- vi.dist(G_vi_DP$cl[1,], tr_cl)
+Gvi.dist_DP1<- vi.dist(G_vi_DP1$cl[1,], tr_cl)
+Gvi.dist_DP2<- vi.dist(G_vi_DP2$cl[1,], tr_cl)
+Gvi.dist_PY1<- vi.dist(G_vi_PY1$cl[1,], tr_cl)
+Gvi.dist_PY2<- vi.dist(G_vi_PY2$cl[1,], tr_cl)
+VI_VIloss_fin_table<- as.data.frame(t(c(Gvi.dist_DP,Gvi.dist_DP1,Gvi.dist_DP2,Gvi.dist_PY1,Gvi.dist_PY2)))
+formattable(VI_VIloss_fin_table,"VI distance, VI loss")
+###############################################################################################################
+############ greedy EPL ##### another algorithm 
+DP_grEPL<- MinimiseEPL(MatDP, pars = list())
+length(unique(DP_grEPL$decision))
+arandi(DP_grEPL$decision,G_vi_DP$cl[1,] )
+DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="NVI"))
+length(unique(DP2_grEPL$decision))
+arandi(DP2_grEPL$decision,G_vi_DP2$cl[1,] )
+PY1_grEPL<- MinimiseEPL(MatPY1, pars = list())
+length(unique(PY1_grEPL$decision))
+PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="NVI"))
+length(unique(PY2_grEPL$decision))
+##### confidence intervals  ############################################################
+
+DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
+
+############################################################################################################
+
+#summary(DP_cb)
+#The credible ball characterizes the uncertainty in the clustering esitmate.
+#It can be summarized with:
+#1. upper vertical bound: partitions in the ball with the fewest clusters that are most distant,
+#2. lower vertical bound: partitions in the ball with the most clusters that are most distant,
+#3. horizontal bound: partitions in the ball with the greatest distance.
+#The upper vertical bound has 89 clusters with a distance of 1.21.
+#The lower vertical bound has 111 clusters with a distance of 1.88.
+#The horizontal bound has 110 clusters with a distance of 1.88.
+
+DP_cb = credibleball(DP_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
+DP2_cb = credibleball(DP2_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
+PY1_cb = credibleball(PY1_clust$VI_est, MatPY1, c.dist = c("VI"), alpha = 0.05)
+PY2_cb = credibleball(PY2_clust$VI_est, MatPY2, c.dist = c("VI"), alpha = 0.05)
+
 ##################################Covariance matrix######################################################################
+
+
+#### Add cluster labels 
+
+
+Colnames_Y
+
+
+
 ### Covariance matrix for the mean 
 #pdf(file = "plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
 MDP= fit_gjam$parameters$corMu
@@ -419,191 +620,5 @@ gcols = colorRampPalette(c( "White", "White", "Black"))
 
 
 
-
-##################################Species names and Functional groups #####################################
-#Preparing species functional groups 
-Species_names_groups<- read.csv("Bauges/PFG_Bauges_Description_2017.csv", sep="\t")
-true_names<- as.data.frame(names(table(Species_names_groups$PFG)))
-names(true_names)<- c("PFG")
-true_names$K_n<- 1:16
-Species_names_groups_num<- merge(Species_names_groups,true_names, by="PFG" )
-
-
-#Species_names_groups_num
-True_clustering<- tibble( CODE_CBNA =  colnames(Ydata)[1: (ncol(Ydata))])
-True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
-
-
-
-Colnames_Y<- merge(Colnames_Y,Species_names_groups_num [,c(2,3,5)], by ="CODE_CBNA" )
-Colnames_Y$species<- as.character(Colnames_Y$species)
-Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
-
-
-##################################Clustering #####################################
-
-
-relabel_clust<- function(Mat ){
-  Mat_new<- matrix(NA, nrow=nrow(Mat),ncol=ncol(Mat))
-  for(i in 1:nrow(Mat) ){
-    label<-unique(Mat[i,])
-    change<- label[which(label>ncol(Mat))]
-    all_n<- 1:ncol(Mat)
-    admis<- all_n[which(!(all_n %in% label))]
-    Mat_new[i,]<-Mat[i,]
-    if(length(change)>0){
-      for(k in 1:length(change)){
-        old_row<- Mat_new[i,]
-        rep <-old_row==change[k]
-        Mat_new[i,] <- replace(Mat_new[i,], rep, admis[k])
-      }
-    }
-  }
-  return(Mat_new)
-}
-
-
-
-gjamClust<- function(model, true_cl = True_clust$K_n){
-  if("other" %in% colnames(model$inputs$y)){
-    sp_num<- ncol(model$inputs$y)-1
-  } 
-  MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
-  tr_cl<- true_cl
-  CM_DP<-  comp.psm(MatDP)
-  mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
-  vi_DP.ext <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
-  return(list(Bind_est=mbind_DP.ext$cl[1,], VI_est = vi_DP.ext$cl[1,]))
-}
-
-DP_clust<- gjamClust(model= fit_gjam)
-DP2_clust<- gjamClust(model= fit_gjamDP2)
-PY1_clust<- gjamClust(model= fit_gjamPY1)
-PY2_clust<- gjamClust(model= fit_gjamPY2)
-
-
-#### Compare the obtained estimates with the PFG clusters
-
-
-BI_fin_table_K<- tibble(GJAM = length(unique(DP_clust$Bind_est)),GJAM2=length(unique(DP2_clust$Bind_est)),PY1=length(unique(PY1_clust$Bind_est)),PY2=length(unique(PY2_clust$Bind_est)))
-BI_fin_table_VIdist<- tibble(GJAM = vi.dist(DP_clust$Bind_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$Bind_est, True_clust$K_n),PY1= vi.dist(PY1_clust$Bind_est, True_clust$K_n),PY2 = vi.dist(PY2_clust$Bind_est, True_clust$K_n))
-BI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$Bind_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$Bind_est, True_clust$K_n),PY1 = arandi(PY1_clust$Bind_est, True_clust$K_n),PY2 = arandi(PY2_clust$Bind_est, True_clust$K_n))
-
-
-
-VI_fin_table_K<-tibble(GJAM = length(unique(DP_clust$VI_est)),GJAM2=length(unique(DP2_clust$VI_est)),PY1=length(unique(PY1_clust$VI_est)),PY2=length(unique(PY2_clust$VI_est)))
-VI_fin_table_VIdist<-  tibble(GJAM = vi.dist(DP_clust$VI_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust$VI_est, True_clust$K_n),PY2 = vi.dist(PY2_clust$VI_est, True_clust$K_n))
-VI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$VI_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$VI_est, True_clust$K_n),PY1 = arandi(PY1_clust$VI_est, True_clust$K_n),PY2 = arandi(PY2_clust$VI_est, True_clust$K_n))
-
-
-
-
-
-### Old style###############################################################################################################
-sp_num<- ncol(Ydata)-1
-MatDP<- relabel_clust(fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:sp_num])
-MatDP2<- relabel_clust(fit_gjamDP2$chains$kgibbs[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng,1:sp_num])
-MatPY1<- relabel_clust(fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:sp_num])
-MatPY2<- relabel_clust(fit_gjamPY2$chains$kgibbs[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng,1:sp_num])
-
-### Obtain Posterior similarity matrices
-tr_cl<-True_clust$K_n
-CM_DP<-  comp.psm(MatDP)
-CM_DP2<- comp.psm(MatDP2)
-CM_PY1<- comp.psm(MatPY1)
-CM_PY2<- comp.psm(MatPY2)
-
-mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
-mbind_DP2.ext <- minbinder.ext(CM_DP2,MatDP2, method="all",include.greedy = TRUE)
-mbind_PY1.ext <- minbinder.ext(CM_PY1,MatPY1, method="all",include.greedy = TRUE)
-mbind_PY2.ext <- minbinder.ext(CM_PY2,MatPY2, method="all",include.greedy = TRUE)
-
-
-G_BI_cl_fin_table<- tibble(GJAM = t(c(length(unique(mbind_DP.ext$cl[1,])),length(unique(mbind_DP2.ext$cl[1,])),length(unique(mbind_PY1.ext$cl[1,])),length(unique(mbind_PY2.ext$cl[1,])))))
-names(G_BI_cl_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(G_BI_cl_fin_table)
-
-
-Gbi.dist_DP<- vi.dist(mbind_DP.ext$cl[1,], tr_cl)
-Gbi.dist_DP2<- vi.dist(mbind_DP2.ext$cl[1,], tr_cl)
-Gbi.dist_PY1<- vi.dist(mbind_PY1.ext$cl[1,], tr_cl)
-Gbi.dist_PY2<- vi.dist(mbind_PY2.ext$cl[1,], tr_cl)
-BI_VIloss_fin_table<- as.data.frame(t(c(Gbi.dist_DP,Gbi.dist_DP2,Gbi.dist_PY1,Gbi.dist_PY2)))
-formattable(BI_VIloss_fin_table, "VI distance, binder loss")
-
-
-# compare clusterings found by different methods with true grouping for Binder loss
-Ar_D_DP<- arandi(mbind_DP.ext$cl[1,], tr_cl)
-#Ar_D_DP1<- arandi(mbind_DP1.ext$cl[1,], tr_cl)
-Ar_D_DP2<-arandi(mbind_DP2.ext$cl[1,], tr_cl)
-Ar_D_PY1<-arandi(mbind_PY1.ext$cl[1,], tr_cl)
-Ar_D_PY2<-arandi(mbind_PY2.ext$cl[1,], tr_cl)
-Ar_D_fin_table<- as.data.frame(t(c(Ar_D_DP,Ar_D_DP2,Ar_D_PY1,Ar_D_PY2)))
-names(Ar_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-print(Ar_D_fin_table)
-formattable(Ar_D_fin_table, "R index distance, binder loss")
-
-
-
-################################### GREEEDY VI loss 
-G_vi_DP <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
-G_vi_DP2 <- minVI(CM_DP2,MatDP2, method="all", include.greedy = TRUE)
-G_vi_PY1 <- minVI(CM_PY1,MatPY1, method="all", include.greedy = TRUE, l=300)
-G_vi_PY2 <- minVI(CM_PY2,MatPY2, method="all", include.greedy = TRUE)
-
-G_VI_cl_fin_table<- as.data.frame(t(c(length(unique(G_vi_DP$cl[1,])),length(unique(G_vi_DP1$cl[1,])),length(unique(G_vi_DP2$cl[1,])),length(unique(G_vi_PY1$cl[1,])),length(unique(G_vi_PY2$cl[1,])))))
-names(G_VI_cl_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
-formattable(G_VI_cl_fin_table)
-
-
-Ar_VI_DP<- arandi(G_vi_DP$cl[1,], tr_cl)
-Ar_VI_DP1<- arandi(G_vi_DP1$cl[1,], tr_cl)
-Ar_VI_DP2<-arandi(G_vi_DP2$cl[1,], tr_cl)
-Ar_VI_PY1<-arandi(G_vi_PY1$cl[1,], tr_cl)
-Ar_VI_PY2<-arandi(G_vi_PY2$cl[1,], tr_cl)
-Ar_VI_fin_table<- as.data.frame(t(c(Ar_VI_DP,Ar_VI_DP1,Ar_VI_DP2,Ar_VI_PY1,Ar_VI_PY2)))
-names(Ar_VI_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
-formattable(Ar_VI_fin_table,"R index distances, VI loss")
-
-
-Gvi.dist_DP<- vi.dist(G_vi_DP$cl[1,], tr_cl)
-Gvi.dist_DP1<- vi.dist(G_vi_DP1$cl[1,], tr_cl)
-Gvi.dist_DP2<- vi.dist(G_vi_DP2$cl[1,], tr_cl)
-Gvi.dist_PY1<- vi.dist(G_vi_PY1$cl[1,], tr_cl)
-Gvi.dist_PY2<- vi.dist(G_vi_PY2$cl[1,], tr_cl)
-VI_VIloss_fin_table<- as.data.frame(t(c(Gvi.dist_DP,Gvi.dist_DP1,Gvi.dist_DP2,Gvi.dist_PY1,Gvi.dist_PY2)))
-formattable(VI_VIloss_fin_table,"VI distance, VI loss")
-###############################################################################################################
-############ greedy EPL
-DP_grEPL<- MinimiseEPL(MatDP, pars = list())
-length(unique(DP_grEPL$decision))
-arandi(DP_grEPL$decision,G_vi_DP$cl[1,] )
-DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="NVI"))
-length(unique(DP2_grEPL$decision))
-arandi(DP2_grEPL$decision,G_vi_DP2$cl[1,] )
-PY1_grEPL<- MinimiseEPL(MatPY1, pars = list())
-length(unique(PY1_grEPL$decision))
-PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="NVI"))
-length(unique(PY2_grEPL$decision))
-##### confidence intervals 
-
-DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
-
-############################################################################################################
-
-#summary(DP_cb)
-#The credible ball characterizes the uncertainty in the clustering esitmate.
-#It can be summarized with:
-#1. upper vertical bound: partitions in the ball with the fewest clusters that are most distant,
-#2. lower vertical bound: partitions in the ball with the most clusters that are most distant,
-#3. horizontal bound: partitions in the ball with the greatest distance.
-#The upper vertical bound has 89 clusters with a distance of 1.21.
-#The lower vertical bound has 111 clusters with a distance of 1.88.
-#The horizontal bound has 110 clusters with a distance of 1.88.
-
-DP_cb = credibleball(DP_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
-DP2_cb = credibleball(DP2_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
-PY1_cb = credibleball(PY1_clust$VI_est, MatPY1, c.dist = c("VI"), alpha = 0.05)
-PY2_cb = credibleball(PY2_clust$VI_est, MatPY2, c.dist = c("VI"), alpha = 0.05)
 
 

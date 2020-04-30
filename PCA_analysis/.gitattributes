@@ -1,0 +1,1 @@
+fit_gjamDP2.Rdata filter=lfs diff=lfs merge=lfs -text
