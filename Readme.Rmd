@@ -1,7 +1,6 @@
 ---
-title: "ReadMe"
-author: "Daria Bystrova"
-date: "30/04/2020"
+title: "Readme"
+
 output: rmarkdown::github_document
 ---
 
@@ -28,5 +27,4 @@ In the dimension reduction approach in the GJAM model, the species are clustered
 If we have prior knowledge of the number of groups of species that share the same behavior, we could use this prior knowledge in the dimension reduction in the GJAM model. For this, we need to specify the prior number of clusters and (possibly the variance around this number)\
 
 We can use one of two possible regimes, which are based on the clustering with the Dirichlet process and Pitman--Yor process. They differ in clustering flexibility.
-
 

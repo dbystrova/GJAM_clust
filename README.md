@@ -1,7 +1,5 @@
-ReadMe
+Readme
 ================
-Daria Bystrova
-30/04/2020
 
 Results
 -------
