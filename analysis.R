@@ -469,22 +469,26 @@ DP2_cb = credibleball(DP2_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
 PY1_cb = credibleball(PY1_clust$VI_est, MatPY1, c.dist = c("VI"), alpha = 0.05)
 PY2_cb = credibleball(PY2_clust$VI_est, MatPY2, c.dist = c("VI"), alpha = 0.05)
 
+
+#### Cluster names
+Cluster_models<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],  ClustDP=DP_clust$VI_est,
+                         ClustDP2=DP2_clust$VI_est,ClustPY1=PY1_clust$VI_est,ClustPY2=PY2_clust$VI_est, PFG=True_clust$K_n)
+
+save(Cluster_models, file =  paste0(folderpath,"Clusters_modells.Rdata"))
 ##################################Covariance matrix######################################################################
 
 
 #### Add cluster labels 
 
 
-Colnames_Y
-
-
+Colnames_Y_clust<- merge(Colnames_Y, Cluster_models, by ="CODE_CBNA")
 
 ### Covariance matrix for the mean 
 #pdf(file = "plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
 MDP= fit_gjam$parameters$corMu
-rownames(MDP)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-colnames(MDP)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-
+Colnames_Y_clust$Sp_name_DP <- paste(Colnames_Y_clust$ClustDP, Colnames_Y_clust$species,sep="_")
+rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
+colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
 
 cols = colorRampPalette(c("dark blue","white","red"))
 col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
@@ -494,36 +498,42 @@ col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
 corrplot(MDP, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
          type = "lower", title= "Correlation for the DP model (original)", mar=c(0,0,1,0))
 
-corrplot(MDP, diag = FALSE, order = "hclust",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, 
-         method = "color",col=cols(200), type = "lower",title= "Correlation for the DP model (hclust)", mar=c(0,0,1,0))
+corrplot(MDP, diag = FALSE, order = "alphabet",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, 
+         method = "color",col=cols(200), type = "lower",title= "Correlation for the DP model (DP groups)", mar=c(0,0,1,0))
 
 #dev.off()
 
-#pdf(file = "Correlation_matrix_DP2.pdf", width= 8.27, height = 9.69)
-colors_vir=viridis(16, option = "magma")
-LabelCol = sapply(Colnames_Y[order(Colnames_Y$CN),4], function(x) colors_vir[x])
-corrplot(cor(iris[,1:4]), type="upper",  tl.col=LabelCol)
-
+pdf(file = "Correlation_matrix_DP2.pdf", width= 8.27, height = 9.69)
 MDP2= fit_gjamDP2$parameters$corMu
-rownames(MDP2)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-colnames(MDP2)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-corrplot(MDP2, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol, method = "color",col=cols(200),
+Colnames_Y_clust$Sp_name_DP2 <- paste(Colnames_Y_clust$ClustDP2, Colnames_Y_clust$species,sep="_")
+rownames(MDP2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP2"],"other")
+colnames(MDP2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP2"],"other")
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP2))+1, option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP2),"ClustDP2"],15), function(x) colors_vir[x])
+
+corrplot(MDP2, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
          type = "lower", title= "Correlation for the DP2 model (original)", mar=c(0,0,1,0))
 
-corrplot(MDP2, diag = FALSE, order = "hclust",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200), 
-         type = "lower", title= "Correlation for the DP2 model (hclust)", mar=c(0,0,1,0))
+corrplot(MDP2, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
+         type = "full", title= "Correlation for the DP2 model (hclust)", mar=c(0,0,1,0))
 
-#dev.off()
+dev.off()
 
 #pdf(file = "Correlation_matrix_PY1.pdf", width= 8.27, height = 9.69)
-MPY1 = fit_gjamPY1$parameters$corMu
-rownames(MPY1)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-colnames(MPY1)=c(Colnames_Y[order(Colnames_Y$CN),3],"other")
-corrplot(MPY1, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200)
-         , type = "lower", title= "Correlation for the PY1 model (hclust)", mar=c(0,0,1,0))
-corrplot(MPY1, diag = FALSE, order = "hclust",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200)
-         , type = "lower", title= "Correlation for the PY1 model (hclust)", mar=c(0,0,1,0))
+MPY1= fit_gjamPY1$parameters$corMu
+Colnames_Y_clust$Sp_name_PY1 <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
+rownames(MPY1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"ClustPY1"],"other")
+colnames(MPY1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"ClustPY1"],"other")
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY1))+1, option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY1),"ClustPY1"],19), function(x) colors_vir[x])
 
+corrplot(MPY1, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
+         type = "lower", title= "Correlation for the PY1 model (original)", mar=c(0,0,1,0))
+
+corrplot(MPY1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
+         type = "full", title= "Correlation for the PY1 model (hclust)", mar=c(0,0,1,0))
+
+dev.off()
 #dev.off()
 
 #pdf(file = "Correlation_matrix_PY2.pdf", width= 8.27, height = 9.69)
@@ -617,6 +627,50 @@ gcols = colorRampPalette(c( "White", "White", "Black"))
 
 
 
+#### Fin tab
+
+
+# Final matrix
+form<-c(formula)
+Fin_all<-as.data.frame(matrix(NA,nrow=12,ncol=10))
+names(Fin_all)<- c("Parameter","GJAM","GJAM1","GJAM2","PY1","PY2","r", "iter", "burn","formula")
+Fin_all$iter<- iterations
+Fin_all$burn<- burn_period
+Fin_all$r<-fit_gjam$modelList$reductList$r
+Fin_all$formula<-as.character(form)
+Fin_all[1,1]<- "DIC"
+Fin_all[1,2:6]<- c(fit_gjam$fit$DIC,fit_gjamDP1$fit$DIC,fit_gjamDP2$fit$DIC,fit_gjamPY1$fit$DIC,fit_gjamPY2$fit$DIC)/10000
+Fin_all[2,1]<- "mean AUC"
+Fin_all[2,2:6]<- AUC_fin_table
+Fin_all[3,1]<- "mean WAUC"
+Fin_all[3,2:6]<- WAUC_fin_table
+Fin_all[4,1]<- "AUC in"
+Fin_all[4,2:6]<- AUC_fin_in_table
+
+Fin_all[5,1]<- "AUC cond"
+Fin_all[5,2:6]<- AUC_fin_cond_table
+
+Fin_all[6,1]<- "mean p_N"
+Fin_all[6,1]<- "G VI dist binder loss"
+Fin_all[6,2:6]<- BI_VIloss_fin_table
+Fin_all[7,1]<- "AR dist binder loss"
+Fin_all[7,2:6]<- Ar_D_fin_table
+Fin_all[8,1]<- "G VI dist VI loss"
+Fin_all[8,2:6]<- VI_VIloss_fin_table
+Fin_all[9,1]<- "AR dist VI loss"
+Fin_all[9,2:6]<- Ar_VI_fin_table
+Fin_all[10,1]<- "mean K"
+Fin_all[10,2:6]<- c(mean(trace0[burn_period:iterations]),mean(trace1[burn_period:iterations]),mean(trace2[burn_period:iterations]),mean(trace3[burn_period:iterations]),mean(trace4[burn_period:iterations]))
+Fin_all[11,1]<- "K Bind"
+Fin_all[11,2:6]<- G_BI_cl_fin_table
+Fin_all[12,1]<- "K VI"
+Fin_all[12,2:6]<- G_VI_cl_fin_table
+Fin_all[,2:6]<- round(Fin_all[,2:6], 3)
+kable(Fin_all)
+
+#save(Fin_all, file = paste0(folderpath,"Fin_tab_r20.Rdata"))
+
+#FT<- load_object(paste0(folderpath,"Fin_tab_r20.Rdata"))
 
 
 
