@@ -23,6 +23,7 @@ library(Hmsc)
 library(knitr)
 library(tidyverse)
 library(corrplot)
+library(cowplot)
 library(rootSolve)
 library(FactoMineR)
 library(ggsci)
@@ -31,6 +32,7 @@ library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
+source("BNP_functions.R")
 
 load_object <- function(file) {
   tmp <- new.env()
@@ -42,6 +44,8 @@ load_object <- function(file) {
 
 set.seed(123)
 PA_pdata<- load_object("Bauges_dataset/PA_data_clean_PCA.RData")
+save(PA_pdata, file = "Bauges_plant.Rdata")
+Bauges_plant<- PA_pdata
 train_ind <- load_object( "Bauges_dataset/PCAtrain_ind.Rds")
 y<- PA_pdata[,7:(ncol(PA_pdata)-2)]
 Ydata<- gjamTrimY(y,20)$y 
@@ -175,18 +179,21 @@ kable(cbind(data.frame( Measure = rbind("AUC")), rbind(AUC_fin_table)), format="
 
 #Convergence of Sigma
 #Sigma
-df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs)))
-df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$sgibbs) ))
-df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs)))
-df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs)))
+df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
+df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
+df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
+df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 
-
+#pdf(file = "Plots/Effective_size_sigma.pdf", width= 8.27, height = 9.69)
 rbind(df1 %>% mutate(var = "DP"),
       df2 %>%  mutate(var = "DP2"), 
       df3 %>% mutate(var = "PY1")
       #df4 %>%  mutate(var = "PY2")
       ) %>% 
   ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
+#dev.off()
+
+#pdf(file = "Plots/Effective_size_beta.pdf", width= 8.27, height = 9.69)
 
 df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$bgibbs)))
 df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$bgibbs) ))
@@ -199,13 +206,15 @@ rbind(df1 %>% mutate(var = "DP"),
       df3 %>% mutate(var = "PY1"),
       df4 %>%  mutate(var = "PY2")) %>% 
   ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
+#dev.off()
+
 ############################################################################################################
 
 ### Prior/Posterior and convergence for hyperparameters 
-tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
+p_DP2 =tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
        DP2= fit_gjamDP2$chains$alpha.DP_g) %>%
   ggplot(aes(x=it,y=DP2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title="Traceplots of the concentration parameter DP2")+xlab("iterations")+ylab("Concentration parameter DP2") +theme_bw()+
+  labs(title=TeX(sprintf('Trace plot for DP2 parameter $\\alpha$')))+xlab("iterations")+ylab("Concentration parameter DP2") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
@@ -213,11 +222,12 @@ tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
 
 
 
+
 ### Prior/Posterior and convergence for hyperparameters 
-tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
+p_PY2 =tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
        PY2= fit_gjamPY2$chains$alpha.PY_g) %>%
   ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title="Traceplots of the concentration parameter PY2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
+  labs(title=TeX(sprintf('Trace plot for PY1 parameter $\\alpha$')))+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
@@ -226,14 +236,37 @@ tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
 
 
 ### Prior/Posterior and convergence for hyperparameters 
-tibble(it= 1: length(fit_gjamPY2$chains$discount.PY_g),
+p_PY2_d =tibble(it= 1: length(fit_gjamPY2$chains$discount.PY_g),
        PY2= fit_gjamPY2$chains$discount.PY_g) %>%
   ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title="Traceplots of the sigma for PY2")+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
+  labs(title=TeX(sprintf('Trace plot for parameter $\\sigma$')))+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
         plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
+
+#pdf(file = "Plots/Posterior_for_PY_parameters.pdf", width= 8.27, height = 9.69)
+prow <- plot_grid(
+  p_DP2 + theme(legend.position='none'),
+  p_PY2 + theme(legend.position='none'),
+  p_PY2_d + theme(legend.position='none'),
+  nrow = 2
+)
+#legend_b <- get_legend(p_DP2+theme(legend.position ='top'))
+p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
+plot(p)
+#focdev.off()
+
+
+#df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
+#df2<- tibble( ES=effectiveSize(mcmc(fit_gjamPY2$chains$alpha.PY_g) ))
+#df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY2$chains$discount.PY_g)))
+#rbind(df1 %>% mutate(var = "DP2"),
+#      df2 %>%  mutate(var = "PY2_a"), 
+#      df3 %>% mutate(var = "PY2_d")) %>% 
+#  ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
+
+
 
 alpha<-mcmc(fit_gjamDP2$chains$alpha.DP_g)
 plot(alpha,main="alpha DP")
@@ -246,13 +279,68 @@ acfplot(alpha)
 cumuplot(alpha)
 
 #### Add prior/posterior plot
+prior_nu1 <- fit_gjamDP2$modelList$reductList$otherpar$shape
+prior_nu2 <- fit_gjamDP2$modelList$reductList$otherpar$rate
+alpha_vec<- rgamma(18000, prior_nu1,prior_nu2)
+x<- sapply(alpha_vec, functionDPM,n=112,N=112)
+mean(x)
+
+###Posterior for alpha parameter DP2
+
+aDP2 =tibble(Prior =alpha_vec,
+       Posterior = fit_gjamDP2$chains$alpha.DP_g[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng])%>%
+  gather(Distribution, density, Prior:Posterior)%>%
+ ggplot(aes(x=density, fill=Distribution, alpha=0.7)) +
+  geom_density(adjust = 2)+ggtitle(TeX(sprintf('Prior and posterior distribution for DP2 $\\alpha$'))) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+
+
+prior_nu1 <- fit_gjamPY2$modelList$reductList$otherpar$shape
+prior_nu2 <- fit_gjamPY2$modelList$reductList$otherpar$rate
+alpha_vecPY<- rgamma(18000, prior_nu1,prior_nu2)
+x<- sapply(alpha_vecPY, functionPY,n=112, sigma_py=0.25)
+mean(x)
+
+###Posterior for alpha parameter PY
+aPY =tibble(Prior =alpha_vecPY,
+       Posterior = fit_gjamPY2$chains$alpha.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng])%>%
+  gather(Distribution, density, Prior:Posterior)%>%
+  ggplot(aes(x=density, fill=Distribution)) +
+  geom_density(adjust = 2, alpha=0.5)+ggtitle(TeX(sprintf('Prior and posterior distribution for PY2 $\\alpha$'))) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
 
 
+##Posterior for discount parameter
+sPY =tibble(Prior =fit_gjamPY2$chains$discount.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng],
+       Posterior = fit_gjamPY2$chains$discount.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng])%>%
+  gather(Distribution, density, Prior:Posterior)%>%
+  ggplot(aes(x=density, fill=Distribution))  +
+  geom_density(adjust = 2,alpha=0.5)+ggtitle(TeX(sprintf('Prior and posterior distribution for PY2 $\\sigma$')))  +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
+
+#pdf(file = "Plots/Posterior_for_PY_parameters2.pdf", width= 8.27, height = 9.69)
+prow <- plot_grid(
+  aDP2 + theme(legend.position='none'),
+  aPY + theme(legend.position='none'),
+  sPY + theme(legend.position='none'),
+  nrow = 2
+)
+legend_b <- get_legend(aDP2+theme(legend.position ='top'))
+p <- plot_grid(prow, ncol = 1,rel_heights = c(9, 1))
+plot(p)
+#dev.off()
+
+
+##### Posterior distribution for the number of clusters
+
+x =apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))
+hist(x)
 
 
 ############################Trace plot##########################################################################
+#pdf(file = "Plots/Trace_plot_partitions.pdf", width= 8.27, height = 9.69)
 
 tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)))),
               DP= apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x))),
@@ -260,13 +348,14 @@ tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)
               PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))),
               PY2=apply(fit_gjamPY2$chains$kgibbs,1,function(x) length(unique(x))) ) %>%
 gather(Model, trace, DP:PY2)%>%
- ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
+ ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.8)+ scale_color_viridis(discrete=TRUE)+
  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")+
  theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
  theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 16),
        axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 16),
        plot.title = element_text(size = 20)) +theme(legend.text=element_text(size=15))
 
+#dev.off()
 
 ##### Truncation weights ############################################################
 
@@ -568,14 +657,6 @@ expandSigma_rmd <- function(sigma, S){
 }
 
 
-convert_to_m<-function(ar, S){
-  C <- matrix(0,d,d)
-  i.lwr <- which(lower.tri(C, diag = TRUE), arr.ind=TRUE)
-  C[i.lwr] <- ar
-  C<-makeSymm(C)
-  return(t(C))
-}
-
 cov_matrix<- function(fit, burn_period,iterations){
   sgibbs<-fit$chains$sgibbs[burn_period:iterations,]
   sigErrGibbs<-fit$chains$sigErrGibbs[burn_period:iterations]
@@ -605,18 +686,75 @@ cov_matrix<- function(fit, burn_period,iterations){
 A= cov_matrix(fit=fit_gjam, burn_period=fit_gjam$modelList$burnin,iterations=fit_gjam$modelList$ng)
 
 
-
 cols = colorRampPalette(c("dark blue","white","red"))
 col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
 
 gcols = colorRampPalette(c( "White", "White", "Black"))
-#A= cov_matrix(fit=fit_gjam, burn_period=fit_gjam$modelList$burnin,iterations=fit_gjam$modelList$ng)
-#M= cov2cor(A$S_mean)
-#corrplot(cov2cor(A$S_mean), diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
-#corrplot(A$InvS, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
+corrplot(A$InvS, diag = FALSE, order = "hclust",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
+corrplot(A$IS_mean, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
 
+A= cov_matrix(fit=fit_gjamDP2, burn_period=fit_gjamDP2$modelList$burnin + 8000,iterations=fit_gjamDP2$modelList$ng)
+
+
+Mat<- cov2cor(A$S_mean)
+
+Mat[abs(Mat)<0.2] <- 0
+Graph_pcor <- qgraph(Mat,graph="pcor", layout="spring")
+Graph_pcor
+# Make an Igraph object from this matrix:
+network <- graph_from_adjacency_matrix( Mat, weighted=T, mode="undirected", diag=F)
+plot(network)
+library(corrr)
+network_plot(Mat)
+
+library(RColorBrewer)
+coul <- brewer.pal(nlevels(as.factor(mtcars$cyl)), "Set2")
+
+# Map the color to cylinders
+my_color <- coul[as.numeric(as.factor(mtcars$cyl))]
+
+# plot
+par(bg="grey13", mar=c(0,0,0,0))
+set.seed(4)
+plot(network, 
+     vertex.size=12,
+     vertex.color=my_color, 
+     vertex.label.cex=0.7,
+     vertex.label.color="white",
+     vertex.frame.color="transparent"
+)
+
+# title and legend
+text(0,0,"mtcars network",col="white", cex=1.5)
+legend(x=-0.2, y=-0.12, 
+       legend=paste( levels(as.factor(mtcars$cyl)), " cylinders", sep=""), 
+       col = coul , 
+       bty = "n", pch=20 , pt.cex = 2, cex = 1,
+       text.col="white" , horiz = F)library(RColorBrewer)
+coul <- brewer.pal(nlevels(as.factor(mtcars$cyl)), "Set2")
+
+# Map the color to cylinders
+my_color <- coul[as.numeric(as.factor(mtcars$cyl))]
+
+# plot
+par(bg="grey13", mar=c(0,0,0,0))
+set.seed(4)
+plot(network, 
+     vertex.size=12,
+     vertex.label.cex=0.7,
+     vertex.label.color="white",
+     vertex.frame.color="transparent"
+)
+
+# title and legend
+text(0,0,"mtcars network",col="white", cex=1.5)
+legend(x=-0.2, y=-0.12, 
+       legend=paste( levels(as.factor(mtcars$cyl)), " cylinders", sep=""), 
+       col = coul , 
+       bty = "n", pch=20 , pt.cex = 2, cex = 1,
+       text.col="white" , horiz = F)
 
 ########################################################################################
 #### Final Table
@@ -660,4 +798,10 @@ Fin_all[,2:5]<- round(Fin_all[,2:5], 3)
 # Write the first data set in a new workbook
 #write.xlsx(Fin_all, file = "Final_table.xlsx")
 #########################################################################################
+## Probably re-do the conditional prediction
+
+
+
+
+
 
