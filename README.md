@@ -164,7 +164,14 @@ alpha$plot_prior
 alpha$plot_all
 ```
 
-Then we need to estimate the clusters. The cluster estimation is done by the function gjam\_cluster, which would return optimal cluster, that summarize posterior cluster distribution.
+The function `concentation_parameter` is made for visualization purposes, it takes as the input the object gjam and return the values
+
+-   plot\_prior plot the prior distribution for *α* parameter
+-   plot\_all plot for the prior and posterior for *α* parameter
+-   alpha vector of samples from prior distribution of *α* parameter
+-   E\_k expected number of clusters for this parameter of alpha
+
+Then we need to estimate the clusters. The cluster estimation is done by the function gjam\_cluster, which would return optimal cluster, that summarize posterior cluster distribution. We use the method proposedby Wade et al., 2018 where we use the clusters
 
 For building prior and posterior cluster distribution we can use the function...
 
