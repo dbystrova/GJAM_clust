@@ -15,6 +15,7 @@ To reproduce the analysis results, there are two possibilites:
 2.  Download saved models from the following link [models](https://drive.google.com/open?id=1sRu7Q7rJ4aIYp-YCKOa_igA5Ofzc7tRH) and load the models in the folder "PCA analysis/r5\_25" on your local repository
 
 The analysis results could be reproduced by the "analysis.R" script.
+**to run specifc functions for now use firstly script inlclude.R**
 
 How to use the functions
 ------------------------
@@ -139,7 +140,7 @@ rl2  <- list(r = r_reduct, N = S ,DRtype="2", K=16)  #prior is number of plant f
 For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify only `K`. The choice of *N* is the same.
 
 ``` r
-r3  <- list(r = r_reduct, N = S ,DRtype="3", K=16)  #prior is number of plant functional groups
+rl3  <- list(r = r_reduct, N = S ,DRtype="3", K=16)  #prior is number of plant functional groups
 ```
 
 For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify `K` and variance `V`. The choice of *N* is the same.
@@ -148,10 +149,23 @@ For the Pitman--Yor process. If we want to take the Dirichlet process, then we u
 rl4  <- list(r = r_reduct, N = S ,DRtype="3", K=16, V=20)  #prior is number of plant functional groups
 ```
 
-We fit the model
+For instance, we fit the model with the first specification
 
 ``` r
-rl <- list(r =r_reduct, N = S)
-ml   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl,PREDICTX = F)
-fit<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml)
+ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
+fit2<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml2)
 ```
+
+We get the `fit2` gjam object. This object is the same as the one from the original model, except several additional parameters. Firstly, we can plot the prior distribution of the alpha parameter and get expected number of clusters for this prior distribution of *α* (We suggest to test it, due to stochastic nature of hyperparameter tunning). *α* ∼ Ga(*ν*<sub>1</sub>, *ν*<sub>2</sub>). Where *ν*<sub>1</sub> is shape and *ν*<sub>2</sub> rate parameters corresponingly in the modelList `otherpar` list in the `reductList` in `modelList` of gjam object `fit2`.
+
+``` r
+alpha <- concentation_parameter(fit2)
+alpha$plot_prior
+alpha$plot_all
+```
+
+Then we need to estimate the clusters. The cluster estimation is done by the function gjam\_cluster, which would return optimal cluster, that summarize posterior cluster distribution.
+
+For building prior and posterior cluster distribution we can use the function...
+
+We can also consider applcation of the dimension reduction with type 3 We can use the variance to have less peaky distribution
