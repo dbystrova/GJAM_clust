@@ -41,6 +41,9 @@ load_object <- function(file) {
 set.seed(123)
 PA_pdata<- load_object("Bauges_dataset/PA_data_clean_PCA.RData")
 train_ind <- load_object( "Bauges_dataset/PCAtrain_ind.Rds")
+#Bauges_data = PA_pdata
+#save(Bauges_data, file = "data/Bauges_data.RData")
+
 y<- PA_pdata[,7:(ncol(PA_pdata)-2)]
 Ydata<- gjamTrimY(y,20)$y 
 xdata_train <- PA_pdata[train_ind, (ncol(PA_pdata)-1):(ncol(PA_pdata))]

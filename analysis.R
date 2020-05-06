@@ -44,8 +44,10 @@ load_object <- function(file) {
 
 set.seed(123)
 PA_pdata<- load_object("Bauges_dataset/PA_data_clean_PCA.RData")
-save(PA_pdata, file = "Bauges_plant.Rdata")
-Bauges_plant<- PA_pdata
+#Bauges_plant<- cbind(PA_pdata$PC1,PA_pdata$PC2, PA_pdata[,7:(ncol(PA_pdata)-2)])
+#names(Bauges_plant) = c("PC1", "PC2", names(PA_pdata[,7:(ncol(PA_pdata)-2)]))
+#save(Bauges_plant, file = "Bauges_plant.Rdata")
+
 train_ind <- load_object( "Bauges_dataset/PCAtrain_ind.Rds")
 y<- PA_pdata[,7:(ncol(PA_pdata)-2)]
 Ydata<- gjamTrimY(y,20)$y 

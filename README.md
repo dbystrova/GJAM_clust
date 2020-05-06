@@ -19,24 +19,139 @@ The analysis results could be reproduced by the "analysis.R" script.
 How to use the functions
 ------------------------
 
-Firstly, we describe the initial GJAM model and then describe how to specify the parameters. Full description of the GJAM model is provided in the package documentation \[\] and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
+Firstly, we describe the initial GJAM model and then describe how to specify the parameters for the prior. Full description of the GJAM model is provided in the package documentation \[\] and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
 
 Dimension reduction in GJAM model was proposed by \[Taylor et el 2018\]. Dimension reduction is used in two ways:
 
-1.  When dataset contains more species than can be fitted given sample size n.\\
+-   When dataset contains more species than can be fitted given sample size *n*.
+-   When the number of species *S* is too large.
 
-2.  When the number of species *S* is too large. \\
+For the second case we need to specify the parameters for dimension `reduction` in `reductList` and add this parameters in the `modelList`.
 
-For the second case we need to specify the parameters for dimension reudction in reductList and add this parameters in the modelList.
+``` r
+load("Bauges_plant.Rdata")
+y<- Bauges_plant[,3:(ncol(Bauges_plant))]
+Y_data<- gjamTrimY(y,20)$y  ## trim the species that occur less then in 20 cites
+X_data <- Bauges_plant[,1:2] # environmental covariates
+S<- ncol(Y_data)  # number of species
+formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
+iterations=50# number of iterations
+burn_period=10  # burn-in period
+r_reduct = 5      # rank of the covariance matrix approximation
+```
 
-**Table 2. Dimension reduction types**
+Then we specify the `reducltList` and then `modelList` In the `reducltList`
 
-| `DRtype` | Process type | Parameters |           Priors on parameters           | Parameters to specify                 |
-|:--------:|:------------:|:----------:|:----------------------------------------:|---------------------------------------|
-|   `'-'`  |   Dirichlet  |     *α*    |                   none                   | none                                  |
-|   `'2'`  |   Dirichlet  |     *α*    | *G**a*(*ν*<sub>1</sub>, *ν*<sub>2</sub>) | prior number of clusters K            |
-|   `'3'`  |  Pitman--Yor | (*α*, *σ*) |                   none                   | prior number of clusters K / Variance |
-|   `'4'`  |  Pitman--Yor | (*α*, *σ*) |              spike and slab              | prior number of clusters K            |
+-   N is maximum number of possible clusters. *N* ≤ *S*. Could be limited for *S* large to 150. (Technically: the truncation number in Dirichlet Multinomial process)
+-   r is the number of latent factors. *r* ≤ *S*.
 
-**<sup>1</sup> For `'DA'` and `'CC'` data the second element of the partition is not zero, but rather depends on effort. There is thus zero-inflation. The default partition for each data type can be changed with the function `gjamCensorY` (see **specifying censored intervals**).
-**<sup>2</sup> For `'CAT'` data species *s* has *K*<sub>*s*</sub> − 1 non-reference categories. The category with the largest *w*<sub>*i**s*, *k*</sub> is the '1', all others are zeros.
+In the `'modelList'`
+
+-   `typeNames` - specify the type of response data
+-   `ng` is the number of iterations
+-   `reductList` is the parameters for the dimension reduction
+
+``` r
+rl <- list(r =r_reduct, N = S)
+ml   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl,PREDICTX = F)
+fit<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml)
+```
+
+We have described the standard version for the gjam Dimension reduction.
+
+To incorporate prior knowledge in the model, we firstly speciify, the Bayesian nonparametric prior in the variable `DRtype` (see Table 1)
+
+Then `reducltList` in this case will be In the `reducltList`
+
+-   `N` is maximum number of possible clusters. *N* ≤ *S*, could be specified for only for `DRtype = 2`
+-   `r` is the number of latent factors. *r* ≤ *S*.
+-   `DRtype` is the type of the Baysian nonparametric prior.
+-   `K` is prior number of clusters
+-   `V` is the variance for the prior number of clusters, could be specified for only for `DRtype = 3`
+
+For the Pitman--Yor process as there are two parameters PY(*α*, *σ*), for the case where only K is specified, we fix the value of *σ* = 0.25
+
+**Table 1. Dimension reduction types**
+
+<table style="width:100%;">
+<colgroup>
+<col width="8%" />
+<col width="12%" />
+<col width="16%" />
+<col width="39%" />
+<col width="22%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"><code>DRtype</code></th>
+<th align="center">Process type</th>
+<th align="center">Parameters</th>
+<th align="center">Priors on parameters</th>
+<th>Parameters to specify</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><code>'-'</code></td>
+<td align="center">Dirichlet</td>
+<td align="center"><span class="math inline"><em>α</em></span></td>
+<td align="center">none</td>
+<td>none</td>
+</tr>
+<tr class="even">
+<td align="center"><code>'2'</code></td>
+<td align="center">Dirichlet</td>
+<td align="center"><span class="math inline"><em>α</em></span></td>
+<td align="center"><span class="math inline"><em>G</em><em>a</em>(<em>ν</em><sub>1</sub>, <em>ν</em><sub>2</sub>)</span></td>
+<td>prior number of clusters K</td>
+</tr>
+<tr class="odd">
+<td align="center"><code>'3'</code></td>
+<td align="center">Pitman--Yor</td>
+<td align="center"><span class="math inline">(<em>α</em>, <em>σ</em>)</span></td>
+<td align="center">none</td>
+<td>prior number of clusters K / Variance around K</td>
+</tr>
+<tr class="even">
+<td align="center"><code>'4'</code></td>
+<td align="center">Pitman--Yor</td>
+<td align="center"><span class="math inline">(<em>α</em>, <em>σ</em>)</span></td>
+<td align="center">spike and slab</td>
+<td>prior number of clusters K</td>
+</tr>
+</tbody>
+</table>
+
+More precisely on the values of the parameter `DRtype`:
+
+-   No value specified, then the model will use standard dimension reduction approach.
+-   `2` is the dimension reduction with the Dirichlet process and prior distribution on the concentration parameter *α*
+-   `3` is the dimension reduction with the Pitman--Yor process with fixed parameters *α* and *σ*.
+
+-   `4` is the dimension reduction with the Pitman--Yor process with spike and slab prior on *α* and *σ*.
+
+For the example, in the **Bauges plant dataset ** , we take as a prior number of plant functional groups which is 16. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`. Here, `DRtype =2`. The choice of *N* is equal to *S* is natural, as we consider any possible clustering and K is prior number of clusters.
+
+``` r
+rl2  <- list(r = r_reduct, N = S ,DRtype="2", K=16)  #prior is number of plant functional groups
+```
+
+For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify only `K`. The choice of *N* is the same.
+
+``` r
+r3  <- list(r = r_reduct, N = S ,DRtype="3", K=16)  #prior is number of plant functional groups
+```
+
+For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify `K` and variance `V`. The choice of *N* is the same.
+
+``` r
+rl4  <- list(r = r_reduct, N = S ,DRtype="3", K=16, V=20)  #prior is number of plant functional groups
+```
+
+We fit the model
+
+``` r
+rl <- list(r =r_reduct, N = S)
+ml   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl,PREDICTX = F)
+fit<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml)
+```
