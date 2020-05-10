@@ -70,7 +70,7 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 #K_prior=16
 #r_reduct = 5
 
-folderpath="PCA_analysis/r5_25/"
+folderpath="PCA_analysis/r5/"
 
 ##conditional prediction
 columns<-1:ncol(Ydata_train)
@@ -437,6 +437,7 @@ DP2_clust<- gjamClust(model= fit_gjamDP2)
 PY1_clust<- gjamClust(model= fit_gjamPY1)
 PY2_clust<- gjamClust(model= fit_gjamPY2)
 
+#c1<-PY1_clust$VI_est
 
 #### Compare the obtained estimates with the PFG clusters
 
@@ -536,7 +537,7 @@ arandi(DP_grEPL$decision,G_vi_DP$cl[1,] )
 DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="VI"))
 length(unique(DP2_grEPL$decision))
 arandi(DP2_grEPL$decision,G_vi_DP2$cl[1,] )
-PY1_grEPL<- MinimiseEPL(MatPY1, pars = list())
+PY1_grEPL<- MinimiseEPL(MatPY1, pars = list(loss_type="VI"))
 length(unique(PY1_grEPL$decision))
 PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="NVI"))
 length(unique(PY2_grEPL$decision))
@@ -547,11 +548,17 @@ DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 
 ############################################################################################################
 
 A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
+c1<-PY1_clust$VI_est
+arandi(A$ClustPY1,c1 )
+arandi(A$ClustPY1,PY1_grEPL$decision )
+arandi(c1,PY1_grEPL$decision )
 
-arandi(A$ClustDP2,DP2_grEPL$decision )
+
 vi.dist(A$ClustDP2,DP2_grEPL$decision )
 
-table(DP2_grEPL$decision)
+table(PY1_grEPL$decision)
+table(c1)
+
 table(A$ClustDP2)
 
 

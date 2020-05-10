@@ -60,7 +60,7 @@ burn_period=1200
 K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r5_25/"
+folderpath="PCA_analysis/r5/"
 
 ##conditional prediction
 columns<-1:ncol(Ydata_train)

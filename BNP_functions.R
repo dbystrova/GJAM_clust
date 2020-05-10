@@ -154,7 +154,7 @@ compute_parameters_SB_1d<- function(K,n,N_tr,ns=10^5){
 }
 
 #par <- compute_parameters_SB_1d(16,112,112,10^4)
-#PkSB<- Prior_on_K_SB(par,0.25,112,112, runs=10^5 )
+#PkSB<- Prior_on_K_SB(3.057438,0.25,112,112, runs=10^5 )
 #PkSB
 
 
