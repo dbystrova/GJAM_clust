@@ -29,6 +29,7 @@ library(ggsci)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
+source("BNP_functions.R")
 
 load_object <- function(file) {
   tmp <- new.env()
@@ -41,8 +42,6 @@ load_object <- function(file) {
 set.seed(123)
 PA_pdata<- load_object("Bauges_dataset/PA_data_clean_PCA.RData")
 train_ind <- load_object( "Bauges_dataset/PCAtrain_ind.Rds")
-#Bauges_data = PA_pdata
-#save(Bauges_data, file = "data/Bauges_data.RData")
 
 y<- PA_pdata[,7:(ncol(PA_pdata)-2)]
 Ydata<- gjamTrimY(y,20)$y 
@@ -56,8 +55,8 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-iterations=30000
-burn_period=12000
+iterations=3000
+burn_period=1200
 K_prior=16
 r_reduct = 5
 
@@ -89,11 +88,11 @@ save(fit_gjamDP2, file =paste0(folderpath,"fit_gjamDP2.Rdata"))
 rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
 ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
 fit_gjamPY1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
-save(fit_gjamPY1, file = paste0(folderpath,"fit_gjamPY1.Rdata"))
+#save(fit_gjamPY1, file = paste0(folderpath,"fit_gjamPY1.Rdata"))
 ##### PY2
-rl4   <- list(r = r_reduct,DRtype="4",ro.disc=0.5, sigma_py=0.25, K=K_prior)
-ml4   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl4,PREDICTX = F)
-fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml4)
-save(fit_gjamPY2, file = paste0(folderpath,"fit_gjamPY2.Rdata"))
+#rl4   <- list(r = r_reduct,DRtype="4",ro.disc=0.5, sigma_py=0.25, K=K_prior)
+#ml4   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl4,PREDICTX = F)
+#fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml4)
+#save(fit_gjamPY2, file = paste0(folderpath,"fit_gjamPY2.Rdata"))
 
 

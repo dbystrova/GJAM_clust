@@ -4266,11 +4266,13 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
       alpha.DP<-py_params$alpha
     } else{
     sigma_py<-reductList$sigma_py 
-    alpha.DP<-compute_fixed_parameters_1d(fun= function(x) functionPY(x, S,sigma_py=sigma_py),K=K_pr)
-    
+   # alpha.DP<-compute_fixed_parameters_1d(fun= function(x) functionPY(x, S,sigma_py=sigma_py),K=K_pr)
+    alpha.DP<- compute_parameters_SB_1d(K_pr,S,S,10^4)
     }
     N_eps<-floor(.compute_tau_mean(sigma_py,alpha.DP,0.1) + 2*.compute_tau_var(sigma_py,alpha.DP,0.1))
     N<- max(N_eps,30)
+    if (N <= S){
+      N=S}
     reductList$N<- N
     cat(c(alpha.DP,sigma_py),"\n alpha and sigma \n")
   }

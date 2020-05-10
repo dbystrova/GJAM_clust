@@ -23,6 +23,7 @@ library(Hmsc)
 library(knitr)
 library(tidyverse)
 library(corrplot)
+library(latex2exp)
 library(cowplot)
 library(rootSolve)
 library(FactoMineR)
@@ -532,7 +533,7 @@ formattable(VI_VIloss_fin_table,"VI distance, VI loss")
 DP_grEPL<- MinimiseEPL(MatDP, pars = list())
 length(unique(DP_grEPL$decision))
 arandi(DP_grEPL$decision,G_vi_DP$cl[1,] )
-DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="NVI"))
+DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="VI"))
 length(unique(DP2_grEPL$decision))
 arandi(DP2_grEPL$decision,G_vi_DP2$cl[1,] )
 PY1_grEPL<- MinimiseEPL(MatPY1, pars = list())
@@ -544,6 +545,15 @@ length(unique(PY2_grEPL$decision))
 DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
 
 ############################################################################################################
+
+A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
+
+arandi(A$ClustDP2,DP2_grEPL$decision )
+vi.dist(A$ClustDP2,DP2_grEPL$decision )
+
+table(DP2_grEPL$decision)
+table(A$ClustDP2)
+
 
 #summary(DP_cb)
 #The credible ball characterizes the uncertainty in the clustering esitmate.

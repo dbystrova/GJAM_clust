@@ -1,6 +1,5 @@
 #Test the extensions with adaptative MH
 rm(list=ls())
-#setwd("~/Phd/Master/Code/gjam 4/")
 setwd("~/Documents/GitHub/GJAM_clust")
 library(repmis)
 library(gjam)
