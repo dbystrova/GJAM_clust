@@ -248,7 +248,10 @@ p_PY2_d =tibble(it= 1: length(fit_gjamPY2$chains$discount.PY_g),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
         plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
 
-#pdf(file = "Plots/Posterior_for_PY_parameters.pdf", width= 8.27, height = 9.69)
+#pdf(file = "Plots/Posterior_for_DP_parameters.pdf", width= 8.27, height = 9.69)
+#plot(p_DP2)
+#dev.off()
+
 prow <- plot_grid(
   p_DP2 + theme(legend.position='none'),
   p_PY2 + theme(legend.position='none'),
@@ -258,7 +261,7 @@ prow <- plot_grid(
 #legend_b <- get_legend(p_DP2+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 plot(p)
-#focdev.off()
+#dev.off()
 
 
 #df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
@@ -293,8 +296,8 @@ mean(x)
 aDP2 =tibble(Prior =alpha_vec,
        Posterior = fit_gjamDP2$chains$alpha.DP_g[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng])%>%
   gather(Distribution, density, Prior:Posterior)%>%
- ggplot(aes(x=density, fill=Distribution, alpha=0.7)) +
-  geom_density(adjust = 2)+ggtitle(TeX(sprintf('Prior and posterior distribution for DP2 $\\alpha$'))) +
+ ggplot(aes(x=density, fill=Distribution)) +
+  geom_density(adjust = 2, alpha=0.7)+ggtitle(TeX(sprintf('Prior and posterior distribution for DP2 $\\alpha$'))) +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
 
@@ -323,7 +326,9 @@ aDP2 =tibble(Prior =alpha_vec,
 #  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
 
-#pdf(file = "Plots/Posterior_for_PY_parameters2.pdf", width= 8.27, height = 9.69)
+#pdf(file = "Plots/Posterior_for_DP2_parameters.pdf", width= 8.27, height = 9.69)
+#plot(aDP2)
+#dev.off()
 prow <- plot_grid(
   aDP2 + theme(legend.position='none'),
 #  aPY + theme(legend.position='none'),
@@ -348,7 +353,7 @@ tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)
               PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))
             #  PY2=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))) 
        ) %>%
-gather(Model, trace, DP:PY2)%>%
+gather(Model, trace, DP:PY1)%>%
  ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.8)+ scale_color_viridis(discrete=TRUE)+
  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")+
  theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
