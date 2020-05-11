@@ -55,8 +55,8 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-iterations=3000
-burn_period=1200
+iterations=50000
+burn_period=15000
 K_prior=16
 r_reduct = 5
 

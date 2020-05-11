@@ -29,6 +29,7 @@ library(rootSolve)
 library(FactoMineR)
 library(ggsci)
 library(viridis)
+library(latex2exp)
 library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
@@ -105,7 +106,7 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 fit_gjam<- load_object(paste0(folderpath,"fit_gjam.Rdata"))
 fit_gjamDP2<- load_object(paste0(folderpath,"fit_gjamDP2.Rdata"))
 fit_gjamPY1<- load_object(paste0(folderpath,"fit_gjamPY1.Rdata"))
-fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
+#fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
@@ -157,8 +158,8 @@ model_prediction_summary<- function(model, list_out_s,list_in_s , list_cond, Yte
 gjamDP<- model_prediction_summary(model=fit_gjam, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamDP2<- model_prediction_summary(model=fit_gjamDP2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamPY1<- model_prediction_summary(model=fit_gjamPY1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
-gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
-
+#gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+gjamPY2<-gjamPY1
 ####Prediction for all models 
 AUC_data<- tibble(GJAM=gjamDP$AUC_out, GJAM2=gjamDP2$AUC_out, PY1= gjamPY1$AUC_out, PY2=gjamPY2$AUC_out )
 AUC_data_in<-  tibble(GJAM=gjamDP$AUC_in, GJAM2=gjamDP2$AUC_in, PY1= gjamPY1$AUC_in, PY2=gjamPY2$AUC_in )
@@ -186,7 +187,7 @@ df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[fit_gjam$modelList$bu
 df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
 df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
-
+df4<- df3
 #pdf(file = "Plots/Effective_size_sigma.pdf", width= 8.27, height = 9.69)
 rbind(df1 %>% mutate(var = "DP"),
       df2 %>%  mutate(var = "DP2"), 
@@ -224,7 +225,7 @@ p_DP2 =tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
         plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
 
 
-
+#tibble(ES =effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
 
 ### Prior/Posterior and convergence for hyperparameters 
 p_PY2 =tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
@@ -284,7 +285,7 @@ cumuplot(alpha)
 #### Add prior/posterior plot
 prior_nu1 <- fit_gjamDP2$modelList$reductList$otherpar$shape
 prior_nu2 <- fit_gjamDP2$modelList$reductList$otherpar$rate
-alpha_vec<- rgamma(18000, prior_nu1,prior_nu2)
+alpha_vec<- rgamma(35000, prior_nu1,prior_nu2)
 x<- sapply(alpha_vec, functionDPM,n=112,N=112)
 mean(x)
 
@@ -349,7 +350,7 @@ tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)
               DP= apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x))),
               DP2 =apply(fit_gjamDP2$chains$kgibbs,1,function(x) length(unique(x))),
               PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))),
-              PY2=apply(fit_gjamPY2$chains$kgibbs,1,function(x) length(unique(x))) ) %>%
+              PY2=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))) ) %>%
 gather(Model, trace, DP:PY2)%>%
  ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.8)+ scale_color_viridis(discrete=TRUE)+
  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")+
@@ -438,7 +439,7 @@ PY1_clust<- gjamClust(model= fit_gjamPY1)
 PY2_clust<- gjamClust(model= fit_gjamPY2)
 
 #c1<-PY1_clust$VI_est
-
+PY2_clust<- PY1_clust
 #### Compare the obtained estimates with the PFG clusters
 
 
@@ -549,7 +550,12 @@ DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 
 
 A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
 c1<-PY1_clust$VI_est
+c2<-DP2_clust$VI_est
+
 arandi(A$ClustPY1,c1 )
+arandi(A$ClustDP2,c2)
+arandi(c1,c2)
+
 arandi(A$ClustPY1,PY1_grEPL$decision )
 arandi(c1,PY1_grEPL$decision )
 
