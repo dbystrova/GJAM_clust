@@ -3664,7 +3664,7 @@ gjamFillMissingTimes <- function(xdata, ydata, edata, groups, times,
     }
 
  }else{
-   if(modelList$reductList$DRtype %in% c("1","2","3","4")){
+   if(modelList$reductList$DRtype %in% c("1","2","3")){
      rl<- modelList$reductList
    } else stop("Incorrectly specified DRtype")
  }
@@ -4232,63 +4232,53 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
     xl <- tmp$x
   }
   reductList <- .setupReduct(modelList, S, Q, n) ##########
-  N <- reductList$N; r <- reductList$r ; K_pr <-  reductList$K; PY_var <- reductList$V
+  N <- reductList$N; r <- reductList$r ; K_pr <-  reductList$K; 
+  PY_var <- reductList$V
   DRtype <- reductList$DRtype
   if(is.null(DRtype)){DRtype<-"basic"
   alpha.DP <- S
   }else{
-    if(!(DRtype %in% c("1","2","3","4"))){stop("The type of dimension reduction is not valid")} 
+    if(!(DRtype %in% c("1","2","3"))){stop("The type of dimension reduction is not valid")} 
   }
   if((!is.null(PY_var)&&!DRtype %in% c("3"))){
       stop("Variance specified only for fixed PY")
   }
   ## change for prior K(for "basic" no K assumed)
-  if(is.null(K_pr)&(DRtype %in% c("1","2","3","4"))){stop("Prior number of groups not specified, if you don't need the prior information choose basic version")} 
+  if(is.null(K_pr)&(DRtype %in% c("1","2","3"))){stop("Prior number of groups not specified, if you don't need the prior information choose basic version")} 
   ## Change parameters for Ga(shape, rate)
   if(DRtype=="1") { 
-    gamma_pars<-  compute_gamma_parameters(fun=function(x) simulatuion_function_PY(x,funct=functionDP,ns=30000,Sn=S), K=K_pr)
-    rate <- gamma_pars$nu2
-    shape <- gamma_pars$nu1
-    alpha.DP <- 1;
-    cat(c(rate,shape),"\n rate and shape \n")
-    }
-  if(DRtype=="2") { 
     gamma_pars<- compute_gamma_parameters(fun=function(x) simulatuion_function_DPM(x,funct=functionDPM,ns=30000,Sn=S,N_tr = N), K=K_pr)
     rate <- gamma_pars$nu2
     shape <-gamma_pars$nu1
     alpha.DP <- 1
     cat(c(rate,shape),"\n rate and shape \n") 
-    }
+  }
+  if(DRtype=="2") { 
+    discount.PY<-reductList$sigma_py; 
+    alpha.PY<-reductList$alpha_py; 
+    N<- reductList$N
+    Precomp_matrix <- reductList$Precomp_mat
+    cat(c(alpha.PY,discount.PY),"\n alpha and sigma \n")
+    ptr_logv_comp_mat <- create_xptr("log_v_pdf_comp_mat")
+  }
   if(DRtype=="3") { 
     if(!(is.null(PY_var))) {
       py_params <-  compute_fixed_parameters_PY_2d(K_pr,PY_var,S)
       sigma_py<-py_params$sigma
       alpha.DP<-py_params$alpha
     } else{
-    sigma_py<-reductList$sigma_py 
+      discount.PY<-reductList$sigma_py 
    # alpha.DP<-compute_fixed_parameters_1d(fun= function(x) functionPY(x, S,sigma_py=sigma_py),K=K_pr)
-    alpha.DP<- compute_parameters_SB_1d(K_pr,S,S,10^4)
+    alpha.PY<- compute_parameters_SB_1d(K_pr,S,S,10^4)
     }
-    N_eps<-floor(.compute_tau_mean(sigma_py,alpha.DP,0.1) + 2*.compute_tau_var(sigma_py,alpha.DP,0.1))
+    N_eps<-floor(.compute_tau_mean(discount.PY,alpha.PY,0.1) + 2*.compute_tau_var(discount.PY,alpha.PY,0.1))
     N<- max(N_eps,30)
     if (N <= S){
       N=S}
     reductList$N<- N
-    cat(c(alpha.DP,sigma_py),"\n alpha and sigma \n")
+    cat(c(alpha.PY,discount.PY),"\n alpha and sigma \n")
   }
-  if(DRtype=="4") { 
-    gamma_pars<- compute_gamma_parameters(function(x) simulatuion_function_PY(x,funct=functionPY,ns=30000,Sn=S), K=K_pr)
-    rate<- gamma_pars$nu2
-    shape<- gamma_pars$nu1 
-    ro.disc=reductList$ro.disc;
-    alpha.PY <- 10; 
-    discount.PY<-0.25
-    N_eps<-floor(.compute_tau_mean(0.5,10,0.1) + 2*.compute_tau_var(0.5,10,0.1))
-    N<- N_eps
-    reductList$N<- N
-    cat(c(rate,shape ),"\n rate and shape for alpha \n")
-  }
-  #the last values of the parameters are the starting points of the chains (for DRtype 1,2,4)
+  #the last values of the parameters are the starting points of the chains (for DRtype 1)
   
   if(!is.null(reductList$N))REDUCT <- T
   
@@ -4460,21 +4450,18 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
   if(DRtype=="1") .param.fn <- .paramWrapper_1(REDUCT, inSamp, SS=length(notOther))
   if(DRtype=="2") .param.fn <- .paramWrapper_2(REDUCT, inSamp, SS=length(notOther))
   if(DRtype=="3") .param.fn <- .paramWrapper_3(REDUCT, inSamp, SS=length(notOther))
-  if(DRtype=="4") .param.fn <- .paramWrapper_4(REDUCT, inSamp, SS=length(notOther))
   
   
   sigmaerror <- .1
   
   if(DRtype=="basic")  otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
                                           Z = NA, K =rep(1,S), sigmaDf = sigmaDf)
-  if(DRtype=="1")   otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
-                                       Z = NA, K =rep(1,S), sigmaDf = sigmaDf,rate=rate,alpha.DP=alpha.DP,shape=shape)
-  if(DRtype=="2")  otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
+   if(DRtype=="1")  otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
                                       Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.DP=alpha.DP,rate=rate,shape=shape, alpha.DP_vec=alpha.DP)
-  if(DRtype=="3") otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
-                                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf)
-  if(DRtype=="4")  otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
-                                      Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.PY=alpha.PY,discount.PY=discount.PY,rate=rate,shape=shape,ro.disc=ro.disc, alpha.PY_vec=alpha.PY)
+  if(DRtype=="2") otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
+                                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.PY=alpha.PY,discount.PY=discount.PY, matrixCnk = Precomp_matrix, fun_pointer = ptr_logv_comp_mat)
+  if(DRtype=="3")  otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
+                                      Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.PY=alpha.PY,discount.PY=discount.PY)
   
   
   sigErrGibbs <- rndEff <- NULL
@@ -4495,17 +4482,8 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
     otherpar$pvec     <- .sampleP(N=N, avec=rep(alpha.DP/N,(N-1)),
                                   bvec=((N-1):1)*alpha.DP/N, K=otherpar$K)
     }
-    
+
     if(DRtype=="1")  {otherpar$alpha.DP <- alpha.DP #initial point for alpha
-    otherpar$rate <- rate
-    otherpar$shape <- shape
-    otherpar$pvec     <- .sampleP(N=N, avec=rep(1,(N-1)),
-                                  bvec=rep(alpha.DP,(N-1)), K=otherpar$K)
-    alpha.DP_g<-rep(0,ng)
-    pk_g<-matrix(1,ng,N)
-    
-    }
-    if(DRtype=="2")  {otherpar$alpha.DP <- alpha.DP #initial point for alpha
     otherpar$alpha.DP_vec=alpha.DP
     otherpar$alpha.DP <- alpha.DP
     otherpar$pvec<- .sampleP(N=N, avec=rep(alpha.DP/N,(N-1)),
@@ -4515,25 +4493,24 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
     alpha.DP_g<-rep(0,ng)
     pk_g<-matrix(1,ng,N)
     }
-    if(DRtype=="3")  {otherpar$alpha.DP <- alpha.DP
-    otherpar$sigma_py <- sigma_py
-    otherpar$pvec     <- .sampleP(N=N, avec=rep(1-sigma_py,(N-1)),
-                                  bvec=(1:(N-1))*sigma_py + alpha.DP, K=otherpar$K)
-    pk_g<-matrix(1,ng,N)
-    }
-    if(DRtype=="4")  {otherpar$alpha.PY <- alpha.PY
-    otherpar$discount.PY <- discount.PY 
-    otherpar$alpha.PY_vec=alpha.PY
-    otherpar$pvec     <- .sampleP(N=N, avec=rep(1-discount.PY,(N-1)),
-                                  bvec=((1:(N-1))*discount.PY+alpha.PY), K=otherpar$K)
-    otherpar$rate<-rate
-    otherpar$shape<-shape
-    otherpar$ro.disc<-ro.disc
-    alpha.PY_g<-rep(0,ng)
-    discount.PY_g<-rep(0,ng)
-    pk_g<-matrix(1,ng,N)
+    if(DRtype=="2")  {
+      otherpar$discount.PY <-discount.PY
+      otherpar$alpha.PY <- alpha.PY
+      otherpar$pvec      <-  .sampleP_PYM(N = N, alpha_val = alpha.PY, sigma_val = discount.PY, K = otherpar$K, Mat =Precomp_matrix,  func = ptr_logv_comp_mat)  
+      
+      otherpar$matrixCnk <- Precomp_matrix
+      otherpar$fun_pointer <- ptr_logv_comp_mat
+      pk_g<-matrix(1,ng,N)
     }
     
+    if(DRtype=="3")  {
+    otherpar$discount.PY <-discount.PY
+    otherpar$alpha.PY <- alpha.PY
+    otherpar$pvec     <- .sampleP(N=N, avec=rep(1-discount.PY,(N-1)),
+                                  bvec=(1:(N-1))*discount.PY + alpha.PY, K=otherpar$K)
+    pk_g<-matrix(1,ng,N)
+    }
+  
     kgibbs <- matrix(1,ng,S)
     sgibbs <- matrix(0,ng, N*r)
     nnames <- paste('N',1:N,sep='-')
@@ -4935,13 +4912,10 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
       kgibbs[g,notOther]  <- otherpar$K
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
-      if(DRtype=="1" || DRtype=="2") {alpha.DP_g[g]<- otherpar$alpha.DP
+      if(DRtype=="1") {alpha.DP_g[g]<- otherpar$alpha.DP
       pk_g[g,]<-otherpar$pvec}
       if(DRtype=="3")  {pk_g[g,]<-otherpar$pvec}
-      if(DRtype=="4")  {alpha.PY_g[g] <- otherpar$alpha.PY
-      discount.PY_g[g]<- otherpar$discount.PY
-      pk_g[g,]<-otherpar$pvec}
-      
+      if(DRtype=="2")  {pk_g[g,]<-otherpar$pvec}
       if(length(corCols) > 0){
         if(max(diag(sg)[corCols]) > 5){  #overfitting covariance
           stop(
@@ -5817,9 +5791,9 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
     
     if(DRtype=="basic") chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs))
-    if(DRtype=="1" || DRtype=="2") chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.DP_g=alpha.DP_g, pk_g=pk_g))
-    if(DRtype=="3")  chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs, pk_g=pk_g))
-    if(DRtype=="4") chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g, pk_g=pk_g))
+    if(DRtype=="1") chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.DP_g=alpha.DP_g, pk_g=pk_g))
+    if(DRtype=="2")  chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs, pk_g=pk_g))
+    if(DRtype=="3") chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs, pk_g=pk_g))
     
   }
   
@@ -11761,6 +11735,86 @@ sqrtSeq <- function(maxval){ #labels for sqrt scale
   p
 }
 
+### BNP functions for sampling the weights in the PYM process
+
+lt.temp_st_pdf <- function(s, c, sigma, k) {
+  exp( - c*( (s+k)^(sigma)  - k^(sigma) ))
+}
+
+
+mult_PY <- function(alpha,sigma, H) {
+  Uv<- rgamma(1,alpha/sigma,alpha/sigma)
+  # Uv<- rgamma(1,alpha/sigma,1)
+  U<- (Uv)^(1/sigma)
+  
+  x.rlap <- rlaptrans(H, lt.temp_st_pdf, c=alpha/(sigma*H), sigma, k=U)
+  #x.rlap <- rlaptrans(H, lt.temp_st_pdf, c=1/H, sigma, k=U)
+  pk_vec <- x.rlap /sum(x.rlap)
+  return(pk_vec)
+}
+
+
+
+
+
+pdf_lk_mat<- function(l,v, n_k, sigma,H, mat){
+  return( (v^l)*exp(mat[n_k,l]))
+}
+
+sample_lk_mat<- function(nk_vec,v,sigma,H,M){
+  l_post<-c()
+  k<- length(nk_vec)
+  for (i in 1:k){
+    l_vec<- 1:nk_vec[i]
+    if (length(l_vec)==1){
+      l_post[i]=l_vec
+    }
+    else{
+      p_v<- sapply(l_vec, function(x) pdf_lk_mat(x,v,nk_vec[i],sigma,H,mat=M))
+      pv_norm<- p_v/sum(p_v)
+      l_post[i]<- sample(1:(nk_vec[i]),size=1, replace=TRUE, prob=pv_norm)
+    }
+  }
+  return(l_post)
+}
+
+
+
+.sampleP_PYM <- function(N, alpha_val, sigma_val, K, Mat, func){
+  n_k<- table(K)
+  lh<-  rep(0,N)
+  alpha= alpha_val
+  sigma=sigma_val
+  #sample v
+  ptr_logv_comp_mat <- create_xptr("log_v_pdf_comp_mat")
+  v_s = ru_rcpp(logf = func,alpha=alpha, sigma=sigma,H=N,k = length(n_k), nk_vec=n_k,Cnk_mat=Mat, n=1,  d=1, init=1)
+  #sample lk
+  lk <- sample_lk_mat(n_k,v_s$sim_vals[1],sigma,N,Mat)
+  lh[c(as.numeric(c(names(n_k))))]= lk
+  vh <- rep(0,N)  # initialize
+  W_h <- rep(0,N)
+  P_h<-  rep(0,N)
+  p_vec<- n_k - lk*sigma
+  W_h<- rdirichlet(1,c(p_vec, sum(lk)*sigma + alpha))
+  ### R
+  alpha_post<- alpha + sum(lk)*sigma 
+  Uv<- rgamma(1,alpha_post/sigma,alpha_post/sigma)
+  U<- (Uv)^(1/sigma)
+  x.rlap <- rlaptrans(N, lt.temp_st_pdf, c=alpha_post/(sigma*N), sigma, k=U)
+  R_h<- x.rlap /sum(x.rlap)
+  P_h[c(as.numeric(c(names(n_k))))]<- W_h[1:length(n_k)] + W_h[length(n_k)]* R_h[1:length(n_k)]
+  P_h[-c(as.numeric(c(names(n_k))))] <-  W_h[length(n_k)]* R_h[(length(n_k)+1):N]
+  return(P_h)
+}
+
+
+
+
+
+
+
+
+
 .getPars <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
                      alpha.DP, inSamples,...){      
   
@@ -12942,109 +12996,109 @@ columnPaste <- function(c1, c2, sep='-'){
 }
 
 
+# 
+# 
+# 
+# .getPars_1 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+#                        alpha.DP, inSamples,shape,rate,...){      
+#   
+#   # Y includes all terms but x%*%beta
+#   
+#   nn   <- length(inSamples)
+#   p    <- ncol(x)
+#   S    <- ncol(Y)
+#   ntot <- nrow(Y)
+#   nn   <- length(inSamples)
+#   
+#   covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
+#   z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
+#   RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
+#   if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
+#   rndEff <- RR%*%t(Z[K,])
+#   
+#   res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
+#   sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
+#   
+#   if(CLUST){   #only until convergence
+#     avec <- 1/rgamma(r, shape = (2 + r )/2, 
+#                      rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
+#     
+#     D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
+#     Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
+#                     Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
+#     
+#     pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
+#                          Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
+#                          sigmasqk = sigmaerror)
+#     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
+#     
+#     #pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
+#     #                 bvec = ((N-1):1)*alpha.DP/N, K = K)  
+#     pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
+#                      bvec=rep(alpha.DP,(N-1)), K=K)
+#     
+#     alpha.DP<-rgamma(1, shape=N+shape-1, rate = rate-log(pvec[N]))
+#     print(c(shape.rate))
+#   }
+#   
+#   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
+#        sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP,shape=shape,rate=rate)
+# } 
 
-
+# .paramWrapper_1 <- function(REDUCT, inSamples,SS){   
+#   
+#   if(REDUCT){    
+#     
+#     function(CLUST, x,beta,Y,otherpar){
+#       
+#       N  <- otherpar$N
+#       r  <- otherpar$r
+#       D  <- otherpar$D
+#       Z  <- otherpar$Z
+#       sigmaerror <- otherpar$sigmaerror
+#       K          <- otherpar$K
+#       pvec       <- otherpar$pvec
+#       alpha.DP   <- otherpar$alpha.DP
+#       rate       <- otherpar$rate
+#       shape       <- otherpar$shape
+#       tmp        <- .getPars_1(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+#                                D = D, Z = Z, sigmaerror = sigmaerror,
+#                                K = K, pvec = pvec, alpha.DP = alpha.DP,
+#                                inSamples = inSamples, SELECT = F,shape=shape,rate=rate)
+#       
+#       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
+#                                    K = tmp$K, REDUCT=T))
+#       
+#       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
+#                        sigmaerror = tmp$sigmaerror,
+#                        pvec = tmp$pvec, K = tmp$K, alpha.DP = tmp$alpha.DP,shape=tmp$shape,rate=tmp$rate)
+#       
+#       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
+#     }
+#     
+#   } else {
+#     
+#     function(CLUST, x, beta,Y,otherpar){
+#       
+#       sigmaDf  <- otherpar$sigmaDf
+#       XX  <- crossprod(x[inSamples,])
+#       IXX <- solveRcpp(XX)
+#       WX  <- crossprod(x[inSamples,], Y[inSamples,])
+#       WIX <- IXX%*%WX
+#       
+#       sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
+#                                    beta = beta, IXX = IXX, WX = WX, WIX = WIX,
+#                                    TRYPRIOR = T)$sigma
+#       otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
+#       
+#       return(list(sg = sg, otherpar = otherpar))
+#     }
+#   }
+# }
+# 
+# 
 
 .getPars_1 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.DP, inSamples,shape,rate,...){      
-  
-  # Y includes all terms but x%*%beta
-  
-  nn   <- length(inSamples)
-  p    <- ncol(x)
-  S    <- ncol(Y)
-  ntot <- nrow(Y)
-  nn   <- length(inSamples)
-  
-  covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
-  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
-  RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
-  if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
-  rndEff <- RR%*%t(Z[K,])
-  
-  res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
-  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
-  
-  if(CLUST){   #only until convergence
-    avec <- 1/rgamma(r, shape = (2 + r )/2, 
-                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
-    
-    D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
-    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
-                    Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
-    
-    pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
-                         Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
-                         sigmasqk = sigmaerror)
-    K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
-    
-    #pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
-    #                 bvec = ((N-1):1)*alpha.DP/N, K = K)  
-    pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
-                     bvec=rep(alpha.DP,(N-1)), K=K)
-    
-    alpha.DP<-rgamma(1, shape=N+shape-1, rate = rate-log(pvec[N]))
-    print(c(shape.rate))
-  }
-  
-  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-       sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP,shape=shape,rate=rate)
-} 
-
-.paramWrapper_1 <- function(REDUCT, inSamples,SS){   
-  
-  if(REDUCT){    
-    
-    function(CLUST, x,beta,Y,otherpar){
-      
-      N  <- otherpar$N
-      r  <- otherpar$r
-      D  <- otherpar$D
-      Z  <- otherpar$Z
-      sigmaerror <- otherpar$sigmaerror
-      K          <- otherpar$K
-      pvec       <- otherpar$pvec
-      alpha.DP   <- otherpar$alpha.DP
-      rate       <- otherpar$rate
-      shape       <- otherpar$shape
-      tmp        <- .getPars_1(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
-                               D = D, Z = Z, sigmaerror = sigmaerror,
-                               K = K, pvec = pvec, alpha.DP = alpha.DP,
-                               inSamples = inSamples, SELECT = F,shape=shape,rate=rate)
-      
-      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
-                                   K = tmp$K, REDUCT=T))
-      
-      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
-                       sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.DP = tmp$alpha.DP,shape=tmp$shape,rate=tmp$rate)
-      
-      return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
-    }
-    
-  } else {
-    
-    function(CLUST, x, beta,Y,otherpar){
-      
-      sigmaDf  <- otherpar$sigmaDf
-      XX  <- crossprod(x[inSamples,])
-      IXX <- solveRcpp(XX)
-      WX  <- crossprod(x[inSamples,], Y[inSamples,])
-      WIX <- IXX%*%WX
-      
-      sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
-                                   beta = beta, IXX = IXX, WX = WX, WIX = WIX,
-                                   TRYPRIOR = T)$sigma
-      otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
-      
-      return(list(sg = sg, otherpar = otherpar))
-    }
-  }
-}
-
-
-
-.getPars_2 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
                        alpha.DP, inSamples,rate,shape,alpha.DP_vec,...){      
   
   # Y includes all terms but x%*%beta
@@ -13091,7 +13145,7 @@ columnPaste <- function(c1, c2, sep='-'){
 } 
 
 
-.paramWrapper_2 <- function(REDUCT, inSamples,SS){   
+.paramWrapper_1 <- function(REDUCT, inSamples,SS){   
   
   if(REDUCT){    
     
@@ -13109,7 +13163,7 @@ columnPaste <- function(c1, c2, sep='-'){
       shape       <- otherpar$shape
       alpha.DP_vec <-otherpar$alpha.DP_vec
       
-      tmp        <- .getPars_2(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+      tmp        <- .getPars_1(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
                                D = D, Z = Z, sigmaerror = sigmaerror,
                                K = K, pvec = pvec, alpha.DP = alpha.DP, shape=shape,rate=rate, alpha.DP_vec=alpha.DP_vec,
                                inSamples = inSamples, SELECT = F)
@@ -13145,6 +13199,207 @@ columnPaste <- function(c1, c2, sep='-'){
 }
 
 
+.paramWrapper_2 <- function(REDUCT, inSamples,SS){   
+  
+  if(REDUCT){    
+    
+    function(CLUST, x,beta,Y,otherpar){
+      
+      N  <- otherpar$N
+      r  <- otherpar$r
+      D  <- otherpar$D
+      Z  <- otherpar$Z
+      sigmaerror <- otherpar$sigmaerror
+      K          <- otherpar$K
+      pvec       <- otherpar$pvec
+      alpha_py   <- otherpar$alpha.PY
+      sigma_py   <- otherpar$discount.PY
+      matrix_cnk <-  otherpar$matrixCnk
+      ptr_logv_comp_mat <- otherpar$fun_pointer
+      tmp        <- .getPars_2(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+                               D = D, Z = Z, sigmaerror = sigmaerror,
+                               K = K, pvec = pvec, alpha.py = alpha_py,sigma.py=sigma_py,
+                               inSamples = inSamples, ,matrixCnk = matrix_cnk, fun_pointer =ptr_logv_comp_mat,SELECT = F)
+      
+      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
+                                   K = tmp$K, REDUCT=T))
+      
+      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
+                       sigmaerror = tmp$sigmaerror,
+                       pvec = tmp$pvec, K = tmp$K, alpha.PY = alpha_py,discount.PY=sigma_py,matrixCnk = matrix_cnk,fun_pointer = ptr_logv_comp_mat  )
+      
+      return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
+    }
+    
+  } else {
+    
+    function(CLUST, x, beta,Y,otherpar){
+      
+      sigmaDf  <- otherpar$sigmaDf
+      XX  <- crossprod(x[inSamples,])
+      IXX <- solveRcpp(XX)
+      WX  <- crossprod(x[inSamples,], Y[inSamples,])
+      WIX <- IXX%*%WX
+      
+      sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
+                                   beta = beta, IXX = IXX, WX = WX, WIX = WIX,
+                                   TRYPRIOR = T)$sigma
+      otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
+      
+      return(list(sg = sg, otherpar = otherpar))
+    }
+  }
+}
+
+
+.getPars_2 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+                       alpha.py, sigma.py, inSamples,matrixCnk,fun_pointer,...){      
+  
+  # Y includes all terms but x%*%beta
+  
+  nn   <- length(inSamples)
+  p    <- ncol(x)
+  S    <- ncol(Y)
+  ntot <- nrow(Y)
+  nn   <- length(inSamples)
+  
+  covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
+  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
+  RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
+  if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
+  rndEff <- RR%*%t(Z[K,])
+  
+  res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
+  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
+  
+  if(CLUST){   #only until convergence
+    avec <- 1/rgamma(r, shape = (2 + r )/2, 
+                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
+    
+    D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
+    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
+                    Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
+    
+    pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
+                         Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
+                         sigmasqk = sigmaerror)
+    K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
+   # pvec <- .sampleP(N = N, avec = rep(1-sigma.py,(N-1)),
+  #                   bvec = ((1:(N-1))*sigma.py + alpha.DP), K = K)  
+   
+    pvec <- .sampleP_PYM(N = N, alpha_val = alpha.py, sigma_val = sigma.py, K = K, Mat = matrixCnk, func =fun_pointer )  
+    
+     #alphaDP_g<- rgamma(1+N , 1/2 - log(pvec[N]))
+    
+  }
+  
+  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
+       sigmaerror = sigmaerror, rndEff = rndEff)
+} 
+
+
+
+
+.paramWrapper_2 <- function(REDUCT, inSamples,SS){   
+  
+  if(REDUCT){    
+    
+    function(CLUST, x,beta,Y,otherpar){
+      
+      N  <- otherpar$N
+      r  <- otherpar$r
+      D  <- otherpar$D
+      Z  <- otherpar$Z
+      sigmaerror <- otherpar$sigmaerror
+      K          <- otherpar$K
+      pvec       <- otherpar$pvec
+      alpha_py   <- otherpar$alpha.PY
+      sigma_py   <- otherpar$discount.PY
+      matrix_cnk <-  otherpar$matrixCnk
+      ptr_logv_comp_mat <- otherpar$fun_pointer
+      tmp        <- .getPars_2(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+                               D = D, Z = Z, sigmaerror = sigmaerror,
+                               K = K, pvec = pvec, alpha.py = alpha_py,sigma.py=sigma_py,
+                               inSamples = inSamples, ,matrixCnk = matrix_cnk, fun_pointer =ptr_logv_comp_mat,SELECT = F)
+      
+      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
+                                   K = tmp$K, REDUCT=T))
+      
+      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
+                       sigmaerror = tmp$sigmaerror,
+                       pvec = tmp$pvec, K = tmp$K, alpha.PY = alpha_py,discount.PY=sigma_py,matrixCnk = matrix_cnk,fun_pointer = ptr_logv_comp_mat  )
+      
+      return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
+    }
+    
+  } else {
+    
+    function(CLUST, x, beta,Y,otherpar){
+      
+      sigmaDf  <- otherpar$sigmaDf
+      XX  <- crossprod(x[inSamples,])
+      IXX <- solveRcpp(XX)
+      WX  <- crossprod(x[inSamples,], Y[inSamples,])
+      WIX <- IXX%*%WX
+      
+      sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
+                                   beta = beta, IXX = IXX, WX = WX, WIX = WIX,
+                                   TRYPRIOR = T)$sigma
+      otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
+      
+      return(list(sg = sg, otherpar = otherpar))
+    }
+  }
+}
+
+
+.getPars_2 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+                       alpha.py, sigma.py, inSamples,matrixCnk,fun_pointer,...){      
+  
+  # Y includes all terms but x%*%beta
+  
+  nn   <- length(inSamples)
+  p    <- ncol(x)
+  S    <- ncol(Y)
+  ntot <- nrow(Y)
+  nn   <- length(inSamples)
+  
+  covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
+  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
+  RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
+  if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
+  rndEff <- RR%*%t(Z[K,])
+  
+  res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
+  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
+  
+  if(CLUST){   #only until convergence
+    avec <- 1/rgamma(r, shape = (2 + r )/2, 
+                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
+    
+    D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
+    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
+                    Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
+    
+    pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
+                         Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
+                         sigmasqk = sigmaerror)
+    K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
+    # pvec <- .sampleP(N = N, avec = rep(1-sigma.py,(N-1)),
+    #                   bvec = ((1:(N-1))*sigma.py + alpha.DP), K = K)  
+    
+    pvec <- .sampleP_PYM(N = N, alpha_val = alpha.py, sigma_val = sigma.py, K = K, Mat = matrixCnk, func =fun_pointer )  
+    
+    #alphaDP_g<- rgamma(1+N , 1/2 - log(pvec[N]))
+    
+  }
+  
+  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
+       sigmaerror = sigmaerror, rndEff = rndEff)
+} 
+
+
+
 .paramWrapper_3 <- function(REDUCT, inSamples,SS){   
   
   if(REDUCT){    
@@ -13158,11 +13413,11 @@ columnPaste <- function(c1, c2, sep='-'){
       sigmaerror <- otherpar$sigmaerror
       K          <- otherpar$K
       pvec       <- otherpar$pvec
-      alpha.DP   <- otherpar$alpha.DP
-      sigma_py   <- otherpar$sigma_py
+      alpha_py   <- otherpar$alpha.PY
+      sigma_py   <- otherpar$discount.PY
       tmp        <- .getPars_3(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
                                D = D, Z = Z, sigmaerror = sigmaerror,
-                               K = K, pvec = pvec, alpha.DP = alpha.DP,sigma.py=sigma_py,
+                               K = K, pvec = pvec, alpha.py = alpha_py,sigma.py=sigma_py,
                                inSamples = inSamples, SELECT = F)
       
       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
@@ -13170,7 +13425,7 @@ columnPaste <- function(c1, c2, sep='-'){
       
       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
                        sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.DP = alpha.DP,sigma_py=sigma_py )
+                       pvec = tmp$pvec, K = tmp$K, alpha.PY = alpha_py,discount.PY=sigma_py )
       
       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
     }
@@ -13197,7 +13452,7 @@ columnPaste <- function(c1, c2, sep='-'){
 
 
 .getPars_3 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.DP, sigma.py, inSamples,...){      
+                       alpha.py, sigma.py, inSamples,...){      
   
   # Y includes all terms but x%*%beta
   
@@ -13229,9 +13484,8 @@ columnPaste <- function(c1, c2, sep='-'){
                          sigmasqk = sigmaerror)
     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
     pvec <- .sampleP(N = N, avec = rep(1-sigma.py,(N-1)),
-                     bvec = ((1:(N-1))*sigma.py + alpha.DP), K = K)  
-    #alphaDP_g<- rgamma(1+N , 1/2 - log(pvec[N]))
-    
+                     bvec = ((1:(N-1))*sigma.py + alpha.py), K = K)  
+     
   }
   
   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
@@ -13240,115 +13494,114 @@ columnPaste <- function(c1, c2, sep='-'){
 
 
 
-
-
-
-.getPars_4 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.PY,discount.PY, inSamples,rate,shape,ro.disc,alpha.PY_vec,...){      
-  
-  # Y includes all terms but x%*%beta
-  
-  nn   <- length(inSamples)
-  p    <- ncol(x)
-  S    <- ncol(Y)
-  ntot <- nrow(Y)
-  nn   <- length(inSamples)
-  
-  covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
-  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
-  RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
-  if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
-  rndEff <- RR%*%t(Z[K,])
-  
-  res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
-  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
-  
-  if(CLUST){   #only until convergence
-    avec <- 1/rgamma(r, shape = (2 + r )/2, 
-                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
-    
-    D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
-    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
-                    Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
-    
-    pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
-                         Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
-                         sigmasqk = sigmaerror)
-    K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
-    
-    pvec <- .sampleP(N = N, avec = rep(1-discount.PY,(N-1)),
-                     bvec = ((1:(N-1))*discount.PY+alpha.PY), K = K)  
-    #pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
-    #                bvec=rep(alpha.PY,(N-1)), K=K)
-    
-    alpha.PY<-metrop_PY_alpha(theta=alpha.PY,pvec=pvec,lik.fun=lik.alpha.fun,N=N,rate=rate,shape=shape,discount=discount.PY,alpha.PY_vec=alpha.PY_vec)
-    discount.PY<-metrop_PY_discount(theta=discount.PY,pvec=pvec,lik.fun=lik.disc.fun,ro.disc=ro.disc,N=N,alpha.PY=alpha.PY)
-    
-  }
-  
-  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-       sigmaerror = sigmaerror, rndEff = rndEff,alpha.PY=alpha.PY,discount.PY=discount.PY,rate,shape,ro.disc=ro.disc,alpha.PY_vec=c(alpha.PY_vec,alpha.PY))
-} 
-
-
-.paramWrapper_4 <- function(REDUCT, inSamples,SS){   
-  
-  if(REDUCT){    
-    
-    function(CLUST, x,beta,Y,otherpar){
-      
-      N  <- otherpar$N
-      r  <- otherpar$r
-      D  <- otherpar$D
-      Z  <- otherpar$Z
-      sigmaerror <- otherpar$sigmaerror
-      K          <- otherpar$K
-      pvec       <- otherpar$pvec
-      alpha.PY   <- otherpar$alpha.PY
-      discount.PY   <- otherpar$discount.PY
-      rate       <- otherpar$rate
-      shape      <- otherpar$shape
-      ro.disc    <- otherpar$ro.disc
-      alpha.PY_vec<-otherpar$alpha.PY_vec
- 
-
-      
-      
-      tmp        <- .getPars_4(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
-                               D = D, Z = Z, sigmaerror = sigmaerror,
-                               K = K, pvec = pvec, alpha.PY = alpha.PY, discount.PY=discount.PY, shape=shape,rate=rate,
-                               ro.disc=ro.disc,alpha.PY_vec=alpha.PY_vec,
-                               inSamples = inSamples, SELECT = F)
-      
-      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
-                                   K = tmp$K, REDUCT=T))
-      
-      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
-                       sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.PY = tmp$alpha.PY,discount.PY=tmp$discount.PY,shape= shape,rate= rate,ro.disc=ro.disc,alpha.PY_vec=tmp$alpha.PY_vec)
-      
-      return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
-    }
-    
-  } else {
-    
-    function(CLUST, x, beta,Y,otherpar){
-      
-      sigmaDf  <- otherpar$sigmaDf
-      XX  <- crossprod(x[inSamples,])
-      IXX <- solveRcpp(XX)
-      WX  <- crossprod(x[inSamples,], Y[inSamples,])
-      WIX <- IXX%*%WX
-      
-      sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
-                                   beta = beta, IXX = IXX, WX = WX, WIX = WIX,
-                                   TRYPRIOR = T)$sigma
-      otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
-      
-      return(list(sg = sg, otherpar = otherpar))
-    }
-  }
-}
+# 
+# 
+# .getPars_4 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+#                        alpha.PY,discount.PY, inSamples,rate,shape,ro.disc,alpha.PY_vec,...){      
+#   
+#   # Y includes all terms but x%*%beta
+#   
+#   nn   <- length(inSamples)
+#   p    <- ncol(x)
+#   S    <- ncol(Y)
+#   ntot <- nrow(Y)
+#   nn   <- length(inSamples)
+#   
+#   covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
+#   z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
+#   RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
+#   if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
+#   rndEff <- RR%*%t(Z[K,])
+#   
+#   res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
+#   sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
+#   
+#   if(CLUST){   #only until convergence
+#     avec <- 1/rgamma(r, shape = (2 + r )/2, 
+#                      rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
+#     
+#     D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
+#     Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
+#                     Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
+#     
+#     pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
+#                          Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
+#                          sigmasqk = sigmaerror)
+#     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
+#     
+#     pvec <- .sampleP(N = N, avec = rep(1-discount.PY,(N-1)),
+#                      bvec = ((1:(N-1))*discount.PY+alpha.PY), K = K)  
+#     #pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
+#     #                bvec=rep(alpha.PY,(N-1)), K=K)
+#     
+#     alpha.PY<-metrop_PY_alpha(theta=alpha.PY,pvec=pvec,lik.fun=lik.alpha.fun,N=N,rate=rate,shape=shape,discount=discount.PY,alpha.PY_vec=alpha.PY_vec)
+#     discount.PY<-metrop_PY_discount(theta=discount.PY,pvec=pvec,lik.fun=lik.disc.fun,ro.disc=ro.disc,N=N,alpha.PY=alpha.PY)
+#     
+#   }
+#   
+#   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
+#        sigmaerror = sigmaerror, rndEff = rndEff,alpha.PY=alpha.PY,discount.PY=discount.PY,rate,shape,ro.disc=ro.disc,alpha.PY_vec=c(alpha.PY_vec,alpha.PY))
+# } 
+# 
+# 
+# .paramWrapper_4 <- function(REDUCT, inSamples,SS){   
+#   
+#   if(REDUCT){    
+#     
+#     function(CLUST, x,beta,Y,otherpar){
+#       
+#       N  <- otherpar$N
+#       r  <- otherpar$r
+#       D  <- otherpar$D
+#       Z  <- otherpar$Z
+#       sigmaerror <- otherpar$sigmaerror
+#       K          <- otherpar$K
+#       pvec       <- otherpar$pvec
+#       alpha.PY   <- otherpar$alpha.PY
+#       discount.PY   <- otherpar$discount.PY
+#       rate       <- otherpar$rate
+#       shape      <- otherpar$shape
+#       ro.disc    <- otherpar$ro.disc
+#       alpha.PY_vec<-otherpar$alpha.PY_vec
+#  
+# 
+#       
+#       
+#       tmp        <- .getPars_4(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+#                                D = D, Z = Z, sigmaerror = sigmaerror,
+#                                K = K, pvec = pvec, alpha.PY = alpha.PY, discount.PY=discount.PY, shape=shape,rate=rate,
+#                                ro.disc=ro.disc,alpha.PY_vec=alpha.PY_vec,
+#                                inSamples = inSamples, SELECT = F)
+#       
+#       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
+#                                    K = tmp$K, REDUCT=T))
+#       
+#       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
+#                        sigmaerror = tmp$sigmaerror,
+#                        pvec = tmp$pvec, K = tmp$K, alpha.PY = tmp$alpha.PY,discount.PY=tmp$discount.PY,shape= shape,rate= rate,ro.disc=ro.disc,alpha.PY_vec=tmp$alpha.PY_vec)
+#       
+#       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
+#     }
+#     
+#   } else {
+#     
+#     function(CLUST, x, beta,Y,otherpar){
+#       
+#       sigmaDf  <- otherpar$sigmaDf
+#       XX  <- crossprod(x[inSamples,])
+#       IXX <- solveRcpp(XX)
+#       WX  <- crossprod(x[inSamples,], Y[inSamples,])
+#       WIX <- IXX%*%WX
+#       
+#       sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
+#                                    beta = beta, IXX = IXX, WX = WX, WIX = WIX,
+#                                    TRYPRIOR = T)$sigma
+#       otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
+#       
+#       return(list(sg = sg, otherpar = otherpar))
+#     }
+#   }
+# }
 
 metrop_DP <- function(theta, #previous iteration alpha.DP
                       pvec,

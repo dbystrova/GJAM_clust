@@ -4,8 +4,6 @@
 ##Expectation for DP
 functionDP<-function(x, n) {sum(x/(x+(1:n)-1))}
 ##Derivative of expectation for DP
-functionDP_deriv<-function(x, n,K ) {sum(((1:n)-1)/(x+(1:n)-1)^2) -K}
-### Expectation for DP multinomial
 functionDPM<-function(x, n,N) {
   vec<- 0:(n-2)
   E<- N - (N-1)*(prod(x + 1 - x/N + vec)/(prod(x + 1 +vec)))
@@ -16,7 +14,6 @@ functionDPM<-function(x, n,N) {
 functionPY<-function(x, n,sigma_py=0.25) {(x/sigma_py)*(prod((x+sigma_py+c(1:(n))-1)/(x+c(1:(n))-1))-1)}
 
 ### Compute variance for Pitman--Yor process
-
 Var_PY <-  function(alpha, sigma, n) {
   if (n==1) {
     return(0)
@@ -168,6 +165,53 @@ compute_parameters_SB_1d<- function(K,n,N_tr,ns=10^5){
 #p
 
 
+
+
+####### PYM
+
+PY_prior<- function(k,H, n, alpha, sigma, Cnk_mat){
+  n_vec<- 0:(n-2)
+  fal_fact <- prod(alpha +1 +n_vec)
+  coef = exp(log(factorial(H)) -  log(factorial(H - k)) - log(fal_fact))
+  sum<- 0
+  for (l in (k:n)){
+    if (k==l){
+      val0 = exp( lgamma(alpha/sigma +l ) - lgamma(alpha/sigma + 1) - l*log(H)  + Cnk_mat[n,l])
+    }
+    else{
+      val0 = exp( lgamma(alpha/sigma +l ) - lgamma(alpha/sigma + 1) - l*log(H) + Strlng2(l, k, log = TRUE) + Cnk_mat[n,l])
+    }
+    sum<- sum + val0
+  }
+  return( (coef*sum)/sigma)
+}
+
+exp_var_PYM<- function(alpha,sigma,H=H, n=n, Mat_prior){
+  x_vec<- 1:H
+  pks<- sapply(x_vec, PY_prior,H=H, n=n, alpha=alpha, sigma=sigma,Cnk_mat=Mat_prior)
+  plot(x_vec, pks)
+  Exp <- sum(pks*x_vec)
+  Var<- sum(((x_vec- Exp)^2)*pks)
+  return(list(E= Exp, V=Var ))
+}
+
+
+
+
+compute_alpha_PYM<- function(H,n,sigma, Mat_prior, K){
+  x<- seq(0.001,300,1)
+  y=sapply(x, function(x) exp_var_PYM(x, sigma=sigma,H=H, n=n,Mat_prior=Mat_prior)$E) - K
+  f_spline_smooth=smooth.spline(x, y) 
+  roots <- newton2(f = function(x) predict(f_spline_smooth, x,deriv = 0)$y ,f_der=  function(x) predict(f_spline_smooth, x,deriv = 1)$y,x0=1,N=50)
+  #root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
+  #print(roots)
+  return(roots[length(roots)])
+}
+
+
+
+
+
 #library(akima)
 #x= seq(1,10,0.1)
 #y = seq(0.1,0.5,0.05)
@@ -183,21 +227,6 @@ compute_parameters_SB_1d<- function(K,n,N_tr,ns=10^5){
 #axes3d()
 
 
-#library(MBA)
-#spline <- mba.surf(data.frame(x,y,z),100,100)
-
-
-## using rootSolve and multiroot package!
-#compute_fixed_parameters_SBPY_2d<- function(K,V,n, Ntrunc, n_sim=1000){
-#  model<- function(x, K,V,n, Ntrunc){
-#    F1<- Prior_on_K_SB(x[1], x[2], n,Ntrunc, runs=n_sim)$Ek - K
-#    F2<- Prior_on_K_SB(x[1], x[2], n,Ntrunc, runs=n_sim)$Vk -V
-#    c(F1 = F1, F2 = F2)
-#  }
-#  roots_values <- multiroot(f = function(x) model(x,K,V,n, Ntrunc), rtol = 1e-6, start=c(1,0.2))
-#  return(list(alpha = roots_values$root[1],sigma=roots_values$root[2]))
-#}
-#compute_fixed_parameters_SBPY_2d(16, 20, 100,50,  100)
 
 
 
