@@ -105,3 +105,7 @@ fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList =
 
 
 
+
+
+
+
