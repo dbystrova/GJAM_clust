@@ -73,7 +73,7 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 folderpath="PCA_analysis/r5/"
 
-##conditional prediction
+#conditional prediction
 columns<-1:ncol(Ydata_train)
 ycs<- sample(columns, 10)
 y_c_p <-columns[ !columns %in% ycs]
@@ -159,6 +159,7 @@ gjamDP<- model_prediction_summary(model=fit_gjam, list_out_s=new_out,list_in_s=n
 gjamDP1<- model_prediction_summary(model=fit_gjamDP1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamPY1<- model_prediction_summary(model=fit_gjamPY1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+
 ####Prediction for all models 
 AUC_data<- tibble(GJAM=gjamDP$AUC_out, GJAM1=gjamDP1$AUC_out, PY1= gjamPY1$AUC_out , PY2= gjamPY2$AUC_out)
 AUC_data_in<-  tibble(GJAM=gjamDP$AUC_in, GJAM1=gjamDP1$AUC_in, PY1= gjamPY1$AUC_in , PY2= gjamPY2$AUC_in)
@@ -241,7 +242,7 @@ plot(p_DP1)
 #plot(p)
 #dev.off()
 
-df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP1$chains$alpha.DP_g)))
+#df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP1$chains$alpha.DP_g)))
 #df2<- tibble( ES=effectiveSize(mcmc(fit_gjamPY2$chains$alpha.PY_g) ))
 #df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY2$chains$discount.PY_g)))
 #rbind(df1 %>% mutate(var = "DP2"),
@@ -256,10 +257,6 @@ plot(alpha,main="alpha DP")
 acfplot(alpha)
 cumuplot(alpha)
 
-alpha<-mcmc(fit_gjamPY2$chains$discount.PY_g)
-plot(alpha,main="alpha DP")
-acfplot(alpha)
-cumuplot(alpha)
 
 #### Add prior/posterior plot
 prior_nu1 <- fit_gjamDP1$modelList$reductList$otherpar$shape
@@ -288,14 +285,6 @@ aDP1 =tibble(Prior =alpha_vec,
 #pdf(file = "Plots/Posterior_for_DP1_parameters.pdf", width= 8.27, height = 9.69)
 #plot(aDP1)
 #dev.off()
-prow <- plot_grid(
-  aDP2 + theme(legend.position='none'),
-  nrow = 1
-)
-legend_b <- get_legend(aDP1+theme(legend.position ='top'))
-p <- plot_grid(prow, ncol = 1,rel_heights = c(9, 1))
-plot(p)
-#dev.off()
 
 
 ##### Posterior distribution for the number of clusters
@@ -308,7 +297,7 @@ tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)
               DP= apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x))),
               DP1 =apply(fit_gjamDP1$chains$kgibbs,1,function(x) length(unique(x))),
               PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))),
-             PY2=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))) 
+             PY2=apply(fit_gjamPY2$chains$kgibbs,1,function(x) length(unique(x))) 
        ) %>%
 gather(Model, trace, DP:PY2)%>%
  ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
@@ -327,7 +316,7 @@ df_weights <- tibble(pw =apply(fit_gjamDP1$chains$pk_g[-c(1:fit_gjamDP1$modelLis
                      tr= 1:ncol(fit_gjamDP1$chains$pk_g))
 pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
   geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
-  geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Mean weights for DP2, p_last= ",last_pk), 
+  geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Mean weights for DP1, p_last= ",last_pk), 
                                                                                                     caption=paste0("Number of iterations: ",fit_gjamDP1$modelList$ng," burnin: ",fit_gjamDP1$modelList$burnin))+
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 pl_weigths
@@ -345,9 +334,9 @@ pl_weigths
 
 
 
-last_pk<- round(mean(fit_gjamPY2$chains$pk_g[-c(1:fit_gjamPY1$modelList$burnin),fit_gjamPY2$modelList$reductList$N]),5)
+last_pk<- round(mean(fit_gjamPY2$chains$pk_g[-c(1:fit_gjamPY2$modelList$burnin),fit_gjamPY2$modelList$reductList$N]),5)
 df_weights <- tibble(pw =apply(fit_gjamPY2$chains$pk_g[-c(1:fit_gjamPY2$modelList$burnin),],2,mean),
-                     tr= 1:ncol(fit_gjamPY1$chains$pk_g))
+                     tr= 1:ncol(fit_gjamPY2$chains$pk_g))
 pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
   geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
   geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Mean weights for PY1, p_last= ",last_pk), 
@@ -381,12 +370,11 @@ relabel_clust<- function(Mat ){
 
 
 
-gjamClust<- function(model, true_cl = True_clust$K_n){
+gjamClust<- function(model){
   if("other" %in% colnames(model$inputs$y)){
     sp_num<- ncol(model$inputs$y)-1
   } 
   MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
-  tr_cl<- true_cl
   CM_DP<-  comp.psm(MatDP)
   mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
   vi_DP.ext <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
@@ -410,155 +398,108 @@ VI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$VI_est, True_clust$K_n),GJAM
 
 
 
-### Old style###############################################################################################################
-### Obtain Posterior similarity matrices
-tr_cl<-True_clust$K_n
-CM_DP<-  comp.psm(MatDP)
-CM_DP2<- comp.psm(MatDP2)
-CM_PY1<- comp.psm(MatPY1)
-CM_PY2<- comp.psm(MatPY2)
+gjamClust2<- function(model){
+  if("other" %in% colnames(model$inputs$y)){
+    sp_num<- ncol(model$inputs$y)-1
+  } 
+  MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
+  DP_grEPL<- MinimiseEPL(MatDP, pars = list("VI"))
+  return(list( VI_est = DP_grEPL$decision))
+}
 
-mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
-mbind_DP2.ext <- minbinder.ext(CM_DP2,MatDP2, method="all",include.greedy = TRUE)
-mbind_PY1.ext <- minbinder.ext(CM_PY1,MatPY1, method="all",include.greedy = TRUE)
-mbind_PY2.ext <- minbinder.ext(CM_PY2,MatPY2, method="all",include.greedy = TRUE)
+#MatDP<- fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:112]
+#DP_grEPL<- MinimiseEPL(MatDP, pars = list(Kup = 1, loss_type ="VI"))
 
-
-G_BI_cl_fin_table<- tibble(GJAM = t(c(length(unique(mbind_DP.ext$cl[1,])),length(unique(mbind_DP2.ext$cl[1,])),length(unique(mbind_PY1.ext$cl[1,])),length(unique(mbind_PY2.ext$cl[1,])))))
-names(G_BI_cl_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(G_BI_cl_fin_table)
-
-
-Gbi.dist_DP<- vi.dist(mbind_DP.ext$cl[1,], tr_cl)
-Gbi.dist_DP2<- vi.dist(mbind_DP2.ext$cl[1,], tr_cl)
-Gbi.dist_PY1<- vi.dist(mbind_PY1.ext$cl[1,], tr_cl)
-Gbi.dist_PY2<- vi.dist(mbind_PY2.ext$cl[1,], tr_cl)
-BI_VIloss_fin_table<- as.data.frame(t(c(Gbi.dist_DP,Gbi.dist_DP2,Gbi.dist_PY1,Gbi.dist_PY2)))
-formattable(BI_VIloss_fin_table, "VI distance, binder loss")
+DP_clust2<- gjamClust2(model= fit_gjam)
+DP1_clust2<- gjamClust2(model= fit_gjamDP1)
+PY1_clust2<- gjamClust2(model= fit_gjamPY1)
+PY2_clust2<- gjamClust2(model= fit_gjamPY2)
 
 
-# compare clusterings found by different methods with true grouping for Binder loss
-Ar_D_DP<- arandi(mbind_DP.ext$cl[1,], tr_cl)
-#Ar_D_DP1<- arandi(mbind_DP1.ext$cl[1,], tr_cl)
-Ar_D_DP2<-arandi(mbind_DP2.ext$cl[1,], tr_cl)
-Ar_D_PY1<-arandi(mbind_PY1.ext$cl[1,], tr_cl)
-Ar_D_PY2<-arandi(mbind_PY2.ext$cl[1,], tr_cl)
-Ar_D_fin_table<- as.data.frame(t(c(Ar_D_DP,Ar_D_DP2,Ar_D_PY1,Ar_D_PY2)))
-names(Ar_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-print(Ar_D_fin_table)
-formattable(Ar_D_fin_table, "R index distance, binder loss")
+VI_fin_table_K2<-tibble(GJAM = length(unique(DP_clust2$VI_est)),GJAM1=length(unique(DP1_clust2$VI_est)),PY1=length(unique(PY1_clust2$VI_est)),PY2=length(unique(PY2_clust2$VI_est)))
+VI_fin_table_VIdist2<-  tibble(GJAM = vi.dist(DP_clust2$VI_est, True_clust$K_n),GJAM1 = vi.dist(DP1_clust2$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust2$VI_est, True_clust$K_n),PY2= vi.dist(PY2_clust2$VI_est, True_clust$K_n))
+VI_fin_table_ARdist2<- tibble(GJAM = arandi(DP_clust2$VI_est, True_clust$K_n),GJAM1 = arandi(DP1_clust2$VI_est, True_clust$K_n),PY1 = arandi(PY1_clust2$VI_est, True_clust$K_n),PY2 = arandi(PY2_clust2$VI_est, True_clust$K_n))
 
 
 
-################################### GREEEDY VI loss 
-G_vi_DP <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
-G_vi_DP2 <- minVI(CM_DP2,MatDP2, method="all", include.greedy = TRUE)
-G_vi_PY1 <- minVI(CM_PY1,MatPY1, method="all", include.greedy = TRUE, l=300)
-G_vi_PY2 <- minVI(CM_PY2,MatPY2, method="all", include.greedy = TRUE)
 
-G_VI_cl_fin_table<- as.data.frame(t(c(length(unique(G_vi_DP$cl[1,])),length(unique(G_vi_DP1$cl[1,])),length(unique(G_vi_DP2$cl[1,])),length(unique(G_vi_PY1$cl[1,])),length(unique(G_vi_PY2$cl[1,])))))
-names(G_VI_cl_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
-formattable(G_VI_cl_fin_table)
-
-
-Ar_VI_DP<- arandi(G_vi_DP$cl[1,], tr_cl)
-Ar_VI_DP1<- arandi(G_vi_DP1$cl[1,], tr_cl)
-Ar_VI_DP2<-arandi(G_vi_DP2$cl[1,], tr_cl)
-Ar_VI_PY1<-arandi(G_vi_PY1$cl[1,], tr_cl)
-Ar_VI_PY2<-arandi(G_vi_PY2$cl[1,], tr_cl)
-Ar_VI_fin_table<- as.data.frame(t(c(Ar_VI_DP,Ar_VI_DP1,Ar_VI_DP2,Ar_VI_PY1,Ar_VI_PY2)))
-names(Ar_VI_fin_table)<- c("GJAM","GJAM1","GJAM2","PY1","PY2")
-formattable(Ar_VI_fin_table,"R index distances, VI loss")
-
-
-Gvi.dist_DP<- vi.dist(G_vi_DP$cl[1,], tr_cl)
-Gvi.dist_DP1<- vi.dist(G_vi_DP1$cl[1,], tr_cl)
-Gvi.dist_DP2<- vi.dist(G_vi_DP2$cl[1,], tr_cl)
-Gvi.dist_PY1<- vi.dist(G_vi_PY1$cl[1,], tr_cl)
-Gvi.dist_PY2<- vi.dist(G_vi_PY2$cl[1,], tr_cl)
-VI_VIloss_fin_table<- as.data.frame(t(c(Gvi.dist_DP,Gvi.dist_DP1,Gvi.dist_DP2,Gvi.dist_PY1,Gvi.dist_PY2)))
-formattable(VI_VIloss_fin_table,"VI distance, VI loss")
 ###############################################################################################################
-sp_num<- ncol(Ydata)-1
-MatDP<- relabel_clust(fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:sp_num])
-MatDP1<- relabel_clust(fit_gjamDP1$chains$kgibbs[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP1$modelList$ng,1:sp_num])
-MatPY1<- relabel_clust(fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:sp_num])
-MatPY2<- relabel_clust(fit_gjamPY2$chains$kgibbs[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng,1:sp_num])
+# sp_num<- ncol(Ydata)-1
+# MatDP<- relabel_clust(fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:sp_num])
+# MatDP1<- relabel_clust(fit_gjamDP1$chains$kgibbs[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP1$modelList$ng,1:sp_num])
+# MatPY1<- relabel_clust(fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:sp_num])
+# MatPY2<- relabel_clust(fit_gjamPY2$chains$kgibbs[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng,1:sp_num])
 
 ############ greedy EPL ##### another algorithm 
-DP_grEPL<- MinimiseEPL(MatDP, pars = list())
-length(unique(DP_grEPL$decision))
-arandi(DP_grEPL$decision,DP_clust$VI_est )
-DP1_grEPL<- MinimiseEPL(MatDP1, pars = list(loss_type="VI"))
-length(unique(DP1_grEPL$decision))
+# DP_grEPL<- MinimiseEPL(MatDP, pars = list())
+# length(unique(DP_grEPL$decision))
+# arandi(DP_grEPL$decision,DP_clust$VI_est )
+# DP1_grEPL<- MinimiseEPL(MatDP1, pars = list(loss_type="VI"))
+# length(unique(DP1_grEPL$decision))
+# 
+# PY1_grEPL<- MinimiseEPL(MatPY1, pars = list(Kup=5, loss_type="VI"))
+# length(unique(PY1_grEPL$decision))
+# 
+# PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="VI"))
+# length(unique(PY2_grEPL$decision))
+# 
+# arandi(PY1_grEPL$decision,PY1_clust$VI_est)
+# arandi(DP1_grEPL$decision,DP1_clust$VI_est)
+# arandi(DP_grEPL$decision,DP1_grEPL$decision)
+# arandi(DP_grEPL$decision,DP1_grEPL$decision)
 
-PY1_grEPL<- MinimiseEPL(MatPY1, pars = list(loss_type="VI"))
-length(unique(PY1_grEPL$decision))
-
-PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="VI"))
-length(unique(PY2_grEPL$decision))
-
-arandi(PY1_grEPL$decision,PY2_grEPL$decision)
-arandi(PY1_grEPL$decision,DP1_grEPL$decision)
-arandi(PY1_grEPL$decision,DP1_grEPL$decision)
-
-
+# arandi(DP1_clust$VI_est,PY1_clust$VI_est)
+# 
+# arandi(PY1_grEPL$decision,DP1_grEPL$decision)
+# arandi(PY1_grEPL$decision,DP1_grEPL$decision)
+# 
 ##### confidence intervals  ############################################################
 
-DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
+#DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
 
 ############################################################################################################
-
-A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
-c1<-PY1_clust$VI_est
-c2<-DP1_clust$VI_est
-
-arandi(A$ClustPY1,c1 )
-arandi(A$ClustDP2,c2)
-arandi(c1,c2)
-
-arandi(A$ClustPY1,PY1_grEPL$decision )
-arandi(A$ClustPY1,PY2_grEPL$decision )
-
-arandi(c1,PY1_grEPL$decision )
-
-
-vi.dist(A$ClustDP2,DP2_grEPL$decision )
-
-table(PY1_grEPL$decision)
-table(c1)
-
-table(A$ClustDP2)
-
-
+# 
+# A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
+# c1<-PY1_clust$VI_est
+# c2<-DP1_clust$VI_est
+# 
+# arandi(A$ClustPY1,c1 )
+# arandi(A$ClustDP2,c2)
+# arandi(c1,c2)
+# 
+# arandi(A$ClustPY1,PY1_clust2$VI_est )
+# arandi(A$ClustDP2,DP1_clust2$VI_est )
+# 
+ # arandi(PY1_clust2$VI_est,PY1_clust$VI_est)
+ # arandi(PY1_clust2$VI_est,DP1_clust2$VI_est )
+ # arandi(PY1_clust$VI_est,DP1_clust$VI_est )
+ # arandi(DP1_clust2$VI_est,DP1_clust$VI_est )
+ # 
+# 
 #summary(DP_cb)
 #The credible ball characterizes the uncertainty in the clustering esitmate.
-#It can be summarized with:
-#1. upper vertical bound: partitions in the ball with the fewest clusters that are most distant,
-#2. lower vertical bound: partitions in the ball with the most clusters that are most distant,
-#3. horizontal bound: partitions in the ball with the greatest distance.
-#The upper vertical bound has 89 clusters with a distance of 1.21.
-#The lower vertical bound has 111 clusters with a distance of 1.88.
-#The horizontal bound has 110 clusters with a distance of 1.88.
-
-DP_cb = credibleball(DP_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
-DP2_cb = credibleball(DP2_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
-PY1_cb = credibleball(PY1_clust$VI_est, MatPY1, c.dist = c("VI"), alpha = 0.05)
-PY2_cb = credibleball(PY2_clust$VI_est, MatPY2, c.dist = c("VI"), alpha = 0.05)
-
+# 
+# DP_cb = credibleball(DP_clust$VI_est, MatDP2, c.dist = c("VI"), alpha = 0.05)
+# DP1_cb = credibleball(DP1_clust$VI_est, MatDP1, c.dist = c("VI"), alpha = 0.05)
+# PY1_cb = credibleball(PY1_clust$VI_est, MatPY1, c.dist = c("VI"), alpha = 0.05)
+# PY2_cb = credibleball(PY2_clust$VI_est, MatPY2, c.dist = c("VI"), alpha = 0.05)
+# 
 
 #### Cluster names
-Cluster_models<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],  ClustDP=DP_clust$VI_est,
-                         ClustDP2=DP2_clust$VI_est,ClustPY1=PY1_clust$VI_est, PFG=True_clust$K_n)
+# Cluster_models1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],  ClustDP=DP_clust$VI_est,
+#                          ClustDP1=DP1_clust$VI_est,ClustPY1=PY1_clust$VI_est,ClustPY2=PY2_clust$VI_est, PFG=True_clust$K_n)
+Cluster_models_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],  ClustDP=DP_clust$VI_est,
+                          ClustDP1=DP1_clust$VI_est,ClustPY1=PY1_clust$VI_est,PFG=True_clust$K_n)
 
-save(Cluster_models, file =  paste0(folderpath,"Clusters_modells.Rdata"))
+save(Cluster_models_1, file =  paste0(folderpath,"Clusters_modells_1.Rdata"))
+Cluster_models_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],  ClustDP=DP_clust2$VI_est,
+                           ClustDP1=DP1_clust2$VI_est,ClustPY1=PY1_clust2$VI_est,PFG=True_clust$K_n)
+
+save(Cluster_models_2, file =  paste0(folderpath,"Clusters_modells_2.Rdata"))
+
 ##################################Covariance matrix######################################################################
-
-
 #### Add cluster labels 
-
-
-Colnames_Y_clust<- merge(Colnames_Y, Cluster_models, by ="CODE_CBNA")
+Colnames_Y_clust<- merge(Colnames_Y, Cluster_models_2, by ="CODE_CBNA")
 
 ### Covariance matrix for the mean 
 #pdf(file = "Plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
@@ -581,18 +522,18 @@ corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col
 #dev.off()
 
 #pdf(file = "Plots/Correlation_matrix_DP2.pdf", width= 8.27, height = 9.69)
-MDP2= fit_gjamDP2$parameters$corMu
-Colnames_Y_clust$Sp_name_DP2 <- paste(Colnames_Y_clust$ClustDP2, Colnames_Y_clust$species,sep="_")
-rownames(MDP2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP2"],"other")
-colnames(MDP2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP2"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP2))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP2),"ClustDP2"],15), function(x) colors_vir[x])
+MDP1= fit_gjamDP1$parameters$corMu
+Colnames_Y_clust$Sp_name_DP1 <- paste(Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep="_")
+rownames(MDP1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
+colnames(MDP1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP1))+1, option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP1),"ClustDP1"],15), function(x) colors_vir[x])
 
-corrplot(MDP2, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
-         type = "lower", title= "Correlation for the DP2 model (original)", mar=c(0,0,1,0))
+corrplot(MDP1, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
+         type = "lower", title= "Correlation for the DP1 model (original)", mar=c(0,0,1,0))
 
-corrplot(MDP2, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
-         type = "full", title= "Correlation for the DP2 model (DP2 groups)", mar=c(0,0,1,0))
+corrplot(MDP1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
+         type = "full", title= "Correlation for the DP1 model (DP2 groups)", mar=c(0,0,1,0))
 
 #dev.off()
 
@@ -613,18 +554,18 @@ corrplot(MPY1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col
 #dev.off()
 
 #pdf(file = "Plots/Correlation_matrix_PY2.pdf", width= 8.27, height = 9.69)
-MPY2= fit_gjamPY2$parameters$corMu
-Colnames_Y_clust$Sp_name_PY2 <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
-rownames(MPY2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY2"],"other")
-colnames(MPY2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY2"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY2))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY2),"ClustPY2"],length(unique(Colnames_Y_clust$ClustPY2))+1), function(x) colors_vir[x])
-
-corrplot(MPY1, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
-         type = "full", title= "Correlation for the PY2 model (original)", mar=c(0,0,1,0))
-
-corrplot(MPY1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
-         type = "full", title= "Correlation for the PY2 model (PY2 groups)", mar=c(0,0,1,0))
+# MPY2= fit_gjamPY2$parameters$corMu
+# Colnames_Y_clust$Sp_name_PY2 <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
+# rownames(MPY2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY2"],"other")
+# colnames(MPY2)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY2"],"other")
+# colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY2))+1, option = "magma")
+# LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY2),"ClustPY2"],length(unique(Colnames_Y_clust$ClustPY2))+1), function(x) colors_vir[x])
+# 
+# corrplot(MPY1, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color",col=cols(200),
+#          type = "full", title= "Correlation for the PY2 model (original)", mar=c(0,0,1,0))
+# 
+# corrplot(MPY1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45, tl.col=LabelCol,method = "color",col=cols(200),
+#          type = "full", title= "Correlation for the PY2 model (PY2 groups)", mar=c(0,0,1,0))
 
 #dev.off()
 ###### Look at the graph  
@@ -683,7 +624,7 @@ gcols = colorRampPalette(c( "White", "White", "Black"))
 corrplot(A$InvS, diag = FALSE, order = "hclust",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
 corrplot(A$IS_mean, diag = FALSE, order = "original",tl.pos = "ld", tl.cex = 0.5, method = "color",col=cols(200), type = "lower")
 
-A= cov_matrix(fit=fit_gjamDP2, burn_period=fit_gjamDP2$modelList$burnin + 8000,iterations=fit_gjamDP2$modelList$ng)
+A= cov_matrix(fit=fit_gjamDP1, burn_period=fit_gjamDP2$modelList$burnin +1,iterations=fit_gjamDP1$modelList$ng)
 
 
 Mat<- cov2cor(A$S_mean)
@@ -745,50 +686,38 @@ legend(x=-0.2, y=-0.12,
        text.col="white" , horiz = F)
 
 ########################################################################################
+
 #### Final Table
 form<-c(formula)
-Fin_all<-as.data.frame(matrix(NA,nrow=12,ncol=8))
-names(Fin_all)<- c("Parameter","GJAM","GJAM2","PY1","r", "iter", "burn","formula")
+Fin_all<-as.data.frame(matrix(NA,nrow=9,ncol=8))
+names(Fin_all)<- c("Parameter","GJAM","GJAM1","PY1","r", "iter", "burn","formula")
 Fin_all$iter<- fit_gjam$modelList$ng
 Fin_all$burn<- fit_gjam$modelList$burnin
 Fin_all$r<-fit_gjam$modelList$reductList$r
 Fin_all$formula<-as.character(form)
 Fin_all[1,1]<- "DIC"
-Fin_all[1,2:4]<- c(fit_gjam$fit$DIC,fit_gjamDP2$fit$DIC,fit_gjamPY1$fit$DIC)/10000
+Fin_all[1,2:4]<- c(fit_gjam$fit$DIC,fit_gjamDP1$fit$DIC,fit_gjamPY1$fit$DIC)/10000
 Fin_all[2,1]<- "mean AUC"
-Fin_all[2,2:4]<- AUC_fin_table
+Fin_all[2,2:4]<- AUC_fin_table[,1:3]
 Fin_all[3,1]<- "mean WAUC"
-Fin_all[3,2:4]<- WAUC_fin_table
+Fin_all[3,2:4]<- WAUC_fin_table[,1:3]
 Fin_all[4,1]<- "AUC in"
-Fin_all[4,2:4]<- AUC_fin_in_table
-Fin_all[5,1]<- "AUC cond"
-Fin_all[5,2:4]<- AUC_fin_cond_table
-Fin_all[6,1]<- "VI dist Binder loss"
-Fin_all[6,2:4]<- BI_fin_table_VIdist
-Fin_all[7,1]<- "AR dist Binder loss"
-Fin_all[7,2:4]<- BI_fin_table_ARdist
-Fin_all[8,1]<- "VI dist VI loss"
-Fin_all[8,2:4]<- VI_fin_table_VIdist
-Fin_all[9,1]<- "AR dist VI loss"
-Fin_all[9,2:4]<- VI_fin_table_ARdist
-Fin_all[10,1]<- "mean K"
-Fin_all[10,2:4]<- c(mean(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)))[fit_gjam$modelList$burnin:fit_gjam$modelList$ng]),
-                    mean(apply(fit_gjamDP2$chains$kgibbs,1,function(x) length(unique(x)))[fit_gjamDP2$modelList$burnin:fit_gjamDP2$modelList$ng]),
+Fin_all[4,2:4]<- AUC_fin_in_table[,1:3]
+Fin_all[5,1]<- "AR dist VI loss 2"
+Fin_all[5,2:4]<- VI_fin_table_ARdist2[,1:3]
+Fin_all[6,1]<- "AR dist VI loss"
+Fin_all[6,2:4]<- VI_fin_table_ARdist[,1:3]
+Fin_all[7,1]<- "mean K"
+Fin_all[7,2:4]<- c(mean(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)))[fit_gjam$modelList$burnin:fit_gjam$modelList$ng]),
+                    mean(apply(fit_gjamDP1$chains$kgibbs,1,function(x) length(unique(x)))[fit_gjamDP1$modelList$burnin:fit_gjamDP1$modelList$ng]),
                     mean(apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))[fit_gjamPY1$modelList$burnin:fit_gjamPY1$modelList$ng]))
-Fin_all[11,1]<- "K Bind"
-Fin_all[11,2:4]<- BI_fin_table_K
-Fin_all[12,1]<- "K VI"
-Fin_all[12,2:4]<- VI_fin_table_K
-Fin_all[,2:4]<- round(Fin_all[,2:4], 3)
+Fin_all[8,1]<- "K VI2"
+Fin_all[8,2:5]<- VI_fin_table_K2[,1:3]
+Fin_all[9,1]<- "K VI"
+Fin_all[9,2:5]<- VI_fin_table_K[,1:3]
+Fin_all[,2:5]<- round(Fin_all[,2:5], 3)
 #save(Fin_all, file = paste0(folderpath,"Fin_tab_r5.Rdata"))
 #library("xlsx")
 # Write the first data set in a new workbook
 #write.xlsx(Fin_all, file = "Final_table.xlsx")
 #########################################################################################
-## Probably re-do the conditional prediction
-
-
-
-
-
-
