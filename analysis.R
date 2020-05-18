@@ -104,9 +104,9 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 ## Load models
 fit_gjam<- load_object(paste0(folderpath,"fit_gjam.Rdata"))
-fit_gjamDP2<- load_object(paste0(folderpath,"fit_gjamDP2.Rdata"))
+fit_gjamDP1<- load_object(paste0(folderpath,"fit_gjamDP1.Rdata"))
 fit_gjamPY1<- load_object(paste0(folderpath,"fit_gjamPY1.Rdata"))
-#fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
+fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
@@ -156,26 +156,26 @@ model_prediction_summary<- function(model, list_out_s,list_in_s , list_cond, Yte
 
 ####
 gjamDP<- model_prediction_summary(model=fit_gjam, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
-gjamDP2<- model_prediction_summary(model=fit_gjamDP2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+gjamDP1<- model_prediction_summary(model=fit_gjamDP1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamPY1<- model_prediction_summary(model=fit_gjamPY1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
-#gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 ####Prediction for all models 
-AUC_data<- tibble(GJAM=gjamDP$AUC_out, GJAM2=gjamDP2$AUC_out, PY1= gjamPY1$AUC_out )
-AUC_data_in<-  tibble(GJAM=gjamDP$AUC_in, GJAM2=gjamDP2$AUC_in, PY1= gjamPY1$AUC_in )
-AUC_data_cond<- tibble(GJAM=gjamDP$AUC_cond, GJAM2=gjamDP2$AUC_cond, PY1= gjamPY1$AUC_cond )
+AUC_data<- tibble(GJAM=gjamDP$AUC_out, GJAM1=gjamDP1$AUC_out, PY1= gjamPY1$AUC_out , PY2= gjamPY2$AUC_out)
+AUC_data_in<-  tibble(GJAM=gjamDP$AUC_in, GJAM1=gjamDP1$AUC_in, PY1= gjamPY1$AUC_in , PY2= gjamPY2$AUC_in)
+AUC_data_cond<- tibble(GJAM=gjamDP$AUC_cond, GJAM1=gjamDP1$AUC_cond, PY1= gjamPY1$AUC_cond, PY2= gjamPY2$AUC_cond )
 AUC_data$species<- colnames(Ydata_test)[1:ncol(Ydata_test)]
 AUC_fin<- melt(AUC_data)
 
 p2<-ggplot(data=AUC_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
   scale_y_continuous(name="AUC")+
-  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1"))+xlab("Models")+ theme_bw() 
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","PY1","PY2"))+xlab("Models")+ theme_bw() 
 p2
 
 AUC_fin_cond_table<- as.data.frame(t(apply(AUC_data_cond,2,mean)))
 AUC_fin_in_table<- as.data.frame(t(apply(AUC_data_in,2,mean)))
-AUC_fin_table<- as.data.frame(t(apply(AUC_data[,1:3],2,mean)))
-WAUC_fin_table<- as.data.frame(t(apply(AUC_data[,1:3],2,function(x) sum(x*p_w))))
-names(AUC_fin_table)<- c("GJAM","GJAM2","PY1")
+AUC_fin_table<- as.data.frame(t(apply(AUC_data[,1:4],2,mean)))
+WAUC_fin_table<- as.data.frame(t(apply(AUC_data[,1:4],2,function(x) sum(x*p_w))))
+names(AUC_fin_table)<- c("GJAM","GJAM1","PY1","PY2")
 kable(cbind(data.frame( Measure = rbind("AUC")), rbind(AUC_fin_table)), format="pandoc", caption= "Prediction")
 
 ################################################################################################################
@@ -183,14 +183,14 @@ kable(cbind(data.frame( Measure = rbind("AUC")), rbind(AUC_fin_table)), format="
 #Convergence of Sigma
 #Sigma
 df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
-df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
+df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
 df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
-#df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
+df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 #pdf(file = "Plots/Effective_size_sigma.pdf", width= 8.27, height = 9.69)
 rbind(df1 %>% mutate(var = "DP"),
-      df2 %>%  mutate(var = "DP2"), 
-      df3 %>% mutate(var = "PY1")
-      #df4 %>%  mutate(var = "PY2")
+      df2 %>%  mutate(var = "DP1"), 
+      df3 %>% mutate(var = "PY1"),
+      df4 %>%  mutate(var = "PY2")
       ) %>% 
   ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
 #dev.off()
@@ -198,15 +198,15 @@ rbind(df1 %>% mutate(var = "DP"),
 #pdf(file = "Plots/Effective_size_beta.pdf", width= 8.27, height = 9.69)
 
 dfb1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$bgibbs)))
-dfb2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP2$chains$bgibbs) ))
+dfb2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP1$chains$bgibbs) ))
 dfb3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$bgibbs)))
-#df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$bgibbs)))
+df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$bgibbs)))
 
 
 rbind(dfb1 %>% mutate(var = "DP"),
-      dfb2 %>%  mutate(var = "DP2"), 
+      dfb2 %>%  mutate(var = "DP1"), 
       dfb3 %>% mutate(var = "PY1")
-      #, df4 %>%  mutate(var = "PY2")
+      , df4 %>%  mutate(var = "PY2")
       ) %>% 
   ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
 #dev.off()
@@ -214,10 +214,10 @@ rbind(dfb1 %>% mutate(var = "DP"),
 ############################################################################################################
 
 ### Prior/Posterior and convergence for hyperparameters 
-p_DP2 =tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
-       DP2= fit_gjamDP2$chains$alpha.DP_g) %>%
-  ggplot(aes(x=it,y=DP2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title=TeX(sprintf('Trace plot for DP2 parameter $\\alpha$')))+xlab("iterations")+ylab("Concentration parameter DP2") +theme_bw()+
+p_DP1 =tibble(it= 1: length(fit_gjamDP1$chains$alpha.DP_g),
+       DP1= fit_gjamDP1$chains$alpha.DP_g) %>%
+  ggplot(aes(x=it,y=DP1))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
+  labs(title=TeX(sprintf('Trace plot for DP1 parameter $\\alpha$')))+xlab("iterations")+ylab("Concentration parameter DP1") +theme_bw()+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
@@ -226,45 +226,22 @@ p_DP2 =tibble(it= 1: length(fit_gjamDP2$chains$alpha.DP_g),
 
 #tibble(ES =effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
 
-### Prior/Posterior and convergence for hyperparameters 
-p_PY2 =tibble(it= 1: length(fit_gjamPY2$chains$alpha.PY_g),
-       PY2= fit_gjamPY2$chains$alpha.PY_g) %>%
-  ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title=TeX(sprintf('Trace plot for PY1 parameter $\\alpha$')))+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
-  theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
-  theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
-        axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
-        plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
-
-
-
-### Prior/Posterior and convergence for hyperparameters 
-p_PY2_d =tibble(it= 1: length(fit_gjamPY2$chains$discount.PY_g),
-       PY2= fit_gjamPY2$chains$discount.PY_g) %>%
-  ggplot(aes(x=it,y=PY2))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-  labs(title=TeX(sprintf('Trace plot for parameter $\\sigma$')))+xlab("iterations")+ylab("Concentration parameter PY2") +theme_bw()+
-  theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
-  theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 12),
-        axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 12),
-        plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
-
 #pdf(file = "Plots/Posterior_for_DP_parameters.pdf", width= 8.27, height = 9.69)
-#plot(p_DP2)
+plot(p_DP1)
 #dev.off()
-
-prow <- plot_grid(
-  p_DP2 + theme(legend.position='none'),
-  p_PY2 + theme(legend.position='none'),
-  p_PY2_d + theme(legend.position='none'),
-  nrow = 2
-)
+# 
+# prow <- plot_grid(
+#   p_DP1 + theme(legend.position='none'),
+#   p_PY2 + theme(legend.position='none'),
+#   p_PY2_d + theme(legend.position='none'),
+#   nrow = 2
+# )
 #legend_b <- get_legend(p_DP2+theme(legend.position ='top'))
-p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
-plot(p)
+#p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
+#plot(p)
 #dev.off()
 
-
-#df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
+df1<- tibble(ES= effectiveSize(mcmc(fit_gjamDP1$chains$alpha.DP_g)))
 #df2<- tibble( ES=effectiveSize(mcmc(fit_gjamPY2$chains$alpha.PY_g) ))
 #df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY2$chains$discount.PY_g)))
 #rbind(df1 %>% mutate(var = "DP2"),
@@ -274,7 +251,7 @@ plot(p)
 
 
 
-alpha<-mcmc(fit_gjamDP2$chains$alpha.DP_g)
+alpha<-mcmc(fit_gjamDP1$chains$alpha.DP_g)
 plot(alpha,main="alpha DP")
 acfplot(alpha)
 cumuplot(alpha)
@@ -285,19 +262,19 @@ acfplot(alpha)
 cumuplot(alpha)
 
 #### Add prior/posterior plot
-prior_nu1 <- fit_gjamDP2$modelList$reductList$otherpar$shape
-prior_nu2 <- fit_gjamDP2$modelList$reductList$otherpar$rate
+prior_nu1 <- fit_gjamDP1$modelList$reductList$otherpar$shape
+prior_nu2 <- fit_gjamDP1$modelList$reductList$otherpar$rate
 alpha_vec<- rgamma(35000, prior_nu1,prior_nu2)
 x<- sapply(alpha_vec, functionDPM,n=112,N=112)
 mean(x)
 
 ###Posterior for alpha parameter DP2
 
-aDP2 =tibble(Prior =alpha_vec,
-       Posterior = fit_gjamDP2$chains$alpha.DP_g[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng])%>%
+aDP1 =tibble(Prior =alpha_vec,
+       Posterior = fit_gjamDP1$chains$alpha.DP_g[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP1$modelList$ng])%>%
   gather(Distribution, density, Prior:Posterior)%>%
  ggplot(aes(x=density, fill=Distribution)) +
-  geom_density(adjust = 2, alpha=0.7)+ggtitle(TeX(sprintf('Prior and posterior distribution for DP2 $\\alpha$'))) +
+  geom_density(adjust = 1, alpha=0.7)+ggtitle(TeX(sprintf('Prior and posterior distribution for D1 $\\alpha$'))) +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
 
@@ -307,35 +284,15 @@ aDP2 =tibble(Prior =alpha_vec,
 #x<- sapply(alpha_vecPY, functionPY,n=112, sigma_py=0.25)
 #mean(x)
 
-###Posterior for alpha parameter PY
-#aPY =tibble(Prior =alpha_vecPY,
-#       Posterior = fit_gjamPY2$chains$alpha.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng])%>%
-#  gather(Distribution, density, Prior:Posterior)%>%
-#  ggplot(aes(x=density, fill=Distribution)) +
-#  geom_density(adjust = 2, alpha=0.5)+ggtitle(TeX(sprintf('Prior and posterior distribution for PY2 $\\alpha$'))) +
-#  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
-
-
-##Posterior for discount parameter
-#sPY =tibble(Prior =fit_gjamPY2$chains$discount.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng],
-#       Posterior = fit_gjamPY2$chains$discount.PY_g[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng])%>%
-#  gather(Distribution, density, Prior:Posterior)%>%
-#  ggplot(aes(x=density, fill=Distribution))  +
-#  geom_density(adjust = 2,alpha=0.5)+ggtitle(TeX(sprintf('Prior and posterior distribution for PY2 $\\sigma$')))  +
-#  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
-
-
-#pdf(file = "Plots/Posterior_for_DP2_parameters.pdf", width= 8.27, height = 9.69)
-#plot(aDP2)
+#pdf(file = "Plots/Posterior_for_DP1_parameters.pdf", width= 8.27, height = 9.69)
+#plot(aDP1)
 #dev.off()
 prow <- plot_grid(
   aDP2 + theme(legend.position='none'),
-#  aPY + theme(legend.position='none'),
-#  sPY + theme(legend.position='none'),
   nrow = 1
 )
-legend_b <- get_legend(aDP2+theme(legend.position ='top'))
+legend_b <- get_legend(aDP1+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(9, 1))
 plot(p)
 #dev.off()
@@ -349,12 +306,12 @@ plot(p)
 
 tibble(it= 1: length(apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x)))),
               DP= apply(fit_gjam$chains$kgibbs,1,function(x) length(unique(x))),
-              DP2 =apply(fit_gjamDP2$chains$kgibbs,1,function(x) length(unique(x))),
-              PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))
-            #  PY2=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))) 
+              DP1 =apply(fit_gjamDP1$chains$kgibbs,1,function(x) length(unique(x))),
+              PY1=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))),
+             PY2=apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x))) 
        ) %>%
-gather(Model, trace, DP:PY1)%>%
- ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.8)+ scale_color_viridis(discrete=TRUE)+
+gather(Model, trace, DP:PY2)%>%
+ ggplot(aes(x=it,y=trace,col=Model))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")+
  theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
  theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 16),
@@ -365,19 +322,31 @@ gather(Model, trace, DP:PY1)%>%
 
 ##### Truncation weights ############################################################
 
-last_pk<- round(mean(fit_gjamDP2$chains$pk_g[-c(1:fit_gjamDP2$modelList$burnin),fit_gjamDP2$modelList$reductList$N]),5)
-df_weights <- tibble(pw =apply(fit_gjamDP2$chains$pk_g[-c(1:fit_gjamDP2$modelList$burnin),],2,mean),
-                     tr= 1:ncol(fit_gjamDP2$chains$pk_g))
+last_pk<- round(mean(fit_gjamDP1$chains$pk_g[-c(1:fit_gjamDP1$modelList$burnin),fit_gjamDP1$modelList$reductList$N]),5)
+df_weights <- tibble(pw =apply(fit_gjamDP1$chains$pk_g[-c(1:fit_gjamDP1$modelList$burnin),],2,mean),
+                     tr= 1:ncol(fit_gjamDP1$chains$pk_g))
 pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
   geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
   geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Mean weights for DP2, p_last= ",last_pk), 
-                                                                                                    caption=paste0("Number of iterations: ",fit_gjamDP2$modelList$ng," burnin: ",fit_gjamDP2$modelList$burnin))+
+                                                                                                    caption=paste0("Number of iterations: ",fit_gjamDP1$modelList$ng," burnin: ",fit_gjamDP1$modelList$burnin))+
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 pl_weigths
 
 
 last_pk<- round(mean(fit_gjamPY1$chains$pk_g[-c(1:fit_gjamPY1$modelList$burnin),fit_gjamPY1$modelList$reductList$N]),5)
-df_weights <- tibble(pw =apply(fit_gjamPY1$chains$pk_g[-c(1:fit_gjamPY2$modelList$burnin),],2,mean),
+df_weights <- tibble(pw =apply(fit_gjamPY1$chains$pk_g[-c(1:fit_gjamPY1$modelList$burnin),],2,mean),
+                     tr= 1:ncol(fit_gjamPY1$chains$pk_g))
+pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
+  geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
+  geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Mean weights for PY1, p_last= ",last_pk), 
+                                                                                                    caption=paste0("Number of iterations: ",fit_gjamPY1$modelList$ng," burnin: ",fit_gjamPY1$modelList$burnin))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+pl_weigths
+
+
+
+last_pk<- round(mean(fit_gjamPY2$chains$pk_g[-c(1:fit_gjamPY1$modelList$burnin),fit_gjamPY2$modelList$reductList$N]),5)
+df_weights <- tibble(pw =apply(fit_gjamPY2$chains$pk_g[-c(1:fit_gjamPY2$modelList$burnin),],2,mean),
                      tr= 1:ncol(fit_gjamPY1$chains$pk_g))
 pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
   geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
@@ -385,8 +354,6 @@ pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
                                                                                                     caption=paste0("Number of iterations: ",fit_gjamPY2$modelList$ng," burnin: ",fit_gjamPY2$modelList$burnin))+
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 pl_weigths
-
-
 
 
 
@@ -427,24 +394,19 @@ gjamClust<- function(model, true_cl = True_clust$K_n){
 }
 
 DP_clust<- gjamClust(model= fit_gjam)
-DP2_clust<- gjamClust(model= fit_gjamDP2)
+DP1_clust<- gjamClust(model= fit_gjamDP1)
 PY1_clust<- gjamClust(model= fit_gjamPY1)
-#PY2_clust<- gjamClust(model= fit_gjamPY2)
+PY2_clust<- gjamClust(model= fit_gjamPY2)
 
-#c1<-PY1_clust$VI_est
 #### Compare the obtained estimates with the PFG clusters
 
+BI_fin_table_K<- tibble(GJAM = length(unique(DP_clust$Bind_est)),GJAM1=length(unique(DP1_clust$Bind_est)),PY1=length(unique(PY1_clust$Bind_est)),PY2=length(unique(PY2_clust$Bind_est)))
+BI_fin_table_VIdist<- tibble(GJAM = vi.dist(DP_clust$Bind_est, True_clust$K_n),GJAM1 = vi.dist(DP1_clust$Bind_est, True_clust$K_n),PY1= vi.dist(PY1_clust$Bind_est, True_clust$K_n),PY2= vi.dist(PY2_clust$Bind_est, True_clust$K_n))
+BI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$Bind_est, True_clust$K_n),GJAM1 = arandi(DP1_clust$Bind_est, True_clust$K_n),PY1 = arandi(PY1_clust$Bind_est, True_clust$K_n),PY2 = arandi(PY2_clust$Bind_est, True_clust$K_n))
 
-BI_fin_table_K<- tibble(GJAM = length(unique(DP_clust$Bind_est)),GJAM2=length(unique(DP2_clust$Bind_est)),PY1=length(unique(PY1_clust$Bind_est)))
-BI_fin_table_VIdist<- tibble(GJAM = vi.dist(DP_clust$Bind_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$Bind_est, True_clust$K_n),PY1= vi.dist(PY1_clust$Bind_est, True_clust$K_n))
-BI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$Bind_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$Bind_est, True_clust$K_n),PY1 = arandi(PY1_clust$Bind_est, True_clust$K_n))
-
-
-VI_fin_table_K<-tibble(GJAM = length(unique(DP_clust$VI_est)),GJAM2=length(unique(DP2_clust$VI_est)),PY1=length(unique(PY1_clust$VI_est)))
-VI_fin_table_VIdist<-  tibble(GJAM = vi.dist(DP_clust$VI_est, True_clust$K_n),GJAM2 = vi.dist(DP2_clust$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust$VI_est, True_clust$K_n))
-VI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$VI_est, True_clust$K_n),GJAM2 = arandi(DP2_clust$VI_est, True_clust$K_n),PY1 = arandi(PY1_clust$VI_est, True_clust$K_n))
-
-
+VI_fin_table_K<-tibble(GJAM = length(unique(DP_clust$VI_est)),GJAM1=length(unique(DP1_clust$VI_est)),PY1=length(unique(PY1_clust$VI_est)),PY2=length(unique(PY2_clust$VI_est)))
+VI_fin_table_VIdist<-  tibble(GJAM = vi.dist(DP_clust$VI_est, True_clust$K_n),GJAM1 = vi.dist(DP1_clust$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust$VI_est, True_clust$K_n),PY2= vi.dist(PY2_clust$VI_est, True_clust$K_n))
+VI_fin_table_ARdist<- tibble(GJAM = arandi(DP_clust$VI_est, True_clust$K_n),GJAM1 = arandi(DP1_clust$VI_est, True_clust$K_n),PY1 = arandi(PY1_clust$VI_est, True_clust$K_n),PY2 = arandi(PY2_clust$VI_est, True_clust$K_n))
 
 
 
@@ -519,20 +481,28 @@ formattable(VI_VIloss_fin_table,"VI distance, VI loss")
 ###############################################################################################################
 sp_num<- ncol(Ydata)-1
 MatDP<- relabel_clust(fit_gjam$chains$kgibbs[(fit_gjam$modelList$burnin+1):fit_gjam$modelList$ng,1:sp_num])
-MatDP2<- relabel_clust(fit_gjamDP2$chains$kgibbs[(fit_gjamDP2$modelList$burnin+1):fit_gjamDP2$modelList$ng,1:sp_num])
+MatDP1<- relabel_clust(fit_gjamDP1$chains$kgibbs[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP1$modelList$ng,1:sp_num])
 MatPY1<- relabel_clust(fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:sp_num])
+MatPY2<- relabel_clust(fit_gjamPY2$chains$kgibbs[(fit_gjamPY2$modelList$burnin+1):fit_gjamPY2$modelList$ng,1:sp_num])
 
 ############ greedy EPL ##### another algorithm 
 DP_grEPL<- MinimiseEPL(MatDP, pars = list())
 length(unique(DP_grEPL$decision))
-arandi(DP_grEPL$decision,G_vi_DP$cl[1,] )
-DP2_grEPL<- MinimiseEPL(MatDP2, pars = list(loss_type="VI"))
-length(unique(DP2_grEPL$decision))
-arandi(DP2_grEPL$decision,G_vi_DP2$cl[1,] )
+arandi(DP_grEPL$decision,DP_clust$VI_est )
+DP1_grEPL<- MinimiseEPL(MatDP1, pars = list(loss_type="VI"))
+length(unique(DP1_grEPL$decision))
+
 PY1_grEPL<- MinimiseEPL(MatPY1, pars = list(loss_type="VI"))
 length(unique(PY1_grEPL$decision))
-#PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="NVI"))
-#length(unique(PY2_grEPL$decision))
+
+PY2_grEPL<- MinimiseEPL(MatPY2, pars = list(loss_type="VI"))
+length(unique(PY2_grEPL$decision))
+
+arandi(PY1_grEPL$decision,PY2_grEPL$decision)
+arandi(PY1_grEPL$decision,DP1_grEPL$decision)
+arandi(PY1_grEPL$decision,DP1_grEPL$decision)
+
+
 ##### confidence intervals  ############################################################
 
 DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 0.05)
@@ -541,13 +511,15 @@ DP_cb = credibleball(DP_clust$VI_est, MatDP, c.dist = c("VI","Binder"), alpha = 
 
 A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
 c1<-PY1_clust$VI_est
-c2<-DP2_clust$VI_est
+c2<-DP1_clust$VI_est
 
 arandi(A$ClustPY1,c1 )
 arandi(A$ClustDP2,c2)
 arandi(c1,c2)
 
 arandi(A$ClustPY1,PY1_grEPL$decision )
+arandi(A$ClustPY1,PY2_grEPL$decision )
+
 arandi(c1,PY1_grEPL$decision )
 
 
