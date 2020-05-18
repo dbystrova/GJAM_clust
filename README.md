@@ -74,92 +74,41 @@ For the Pitman--Yor process as there are two parameters PY(*α*, *σ*), for th
 
 **Table 1. Dimension reduction types**
 
-<table style="width:100%;">
-<colgroup>
-<col width="8%" />
-<col width="12%" />
-<col width="16%" />
-<col width="39%" />
-<col width="22%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="center"><code>DRtype</code></th>
-<th align="center">Process type</th>
-<th align="center">Parameters</th>
-<th align="center">Priors on parameters</th>
-<th>Parameters to specify</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="center"><code>'-'</code></td>
-<td align="center">Dirichlet</td>
-<td align="center"><span class="math inline"><em>α</em></span></td>
-<td align="center">none</td>
-<td>none</td>
-</tr>
-<tr class="even">
-<td align="center"><code>'2'</code></td>
-<td align="center">Dirichlet</td>
-<td align="center"><span class="math inline"><em>α</em></span></td>
-<td align="center"><span class="math inline"><em>G</em><em>a</em>(<em>ν</em><sub>1</sub>, <em>ν</em><sub>2</sub>)</span></td>
-<td>prior number of clusters K</td>
-</tr>
-<tr class="odd">
-<td align="center"><code>'3'</code></td>
-<td align="center">Pitman--Yor</td>
-<td align="center"><span class="math inline">(<em>α</em>, <em>σ</em>)</span></td>
-<td align="center">none</td>
-<td>prior number of clusters K / Variance around K</td>
-</tr>
-<tr class="even">
-<td align="center"><code>'4'</code></td>
-<td align="center">Pitman--Yor</td>
-<td align="center"><span class="math inline">(<em>α</em>, <em>σ</em>)</span></td>
-<td align="center">spike and slab</td>
-<td>prior number of clusters K</td>
-</tr>
-</tbody>
-</table>
+| `DRtype` | Process type | Parameters |           Priors on parameters           | Parameters to specify      |
+|:--------:|:------------:|:----------:|:----------------------------------------:|----------------------------|
+|   `'-'`  |   Dirichlet  |     *α*    |                   none                   | none                       |
+|   `'1'`  |   Dirichlet  |     *α*    | *G**a*(*ν*<sub>1</sub>, *ν*<sub>2</sub>) | prior number of clusters K |
+|   `'2'`  |  Pitman--Yor | (*α*, *σ*) |                   none                   | prior number of clusters K |
 
 More precisely on the values of the parameter `DRtype`:
 
 -   No value specified, then the model will use standard dimension reduction approach.
--   `2` is the dimension reduction with the Dirichlet process and prior distribution on the concentration parameter *α*
--   `3` is the dimension reduction with the Pitman--Yor process with fixed parameters *α* and *σ*.
+-   `1` is the dimension reduction with the Dirichlet process and prior distribution on the concentration parameter *α*
+-   `2` is the dimension reduction with the Pitman--Yor process with fixed parameters *α* and *σ*.
 
--   `4` is the dimension reduction with the Pitman--Yor process with spike and slab prior on *α* and *σ*.
+For the example, in the **Bauges plant dataset ** , we take as a prior number of plant functional groups which is 16. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`. Here, `DRtype =1`. The choice of *N* is equal to *S* is natural, as we consider any possible clustering and K is prior number of clusters.
 
-For the example, in the **Bauges plant dataset ** , we take as a prior number of plant functional groups which is 16. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`. Here, `DRtype =2`. The choice of *N* is equal to *S* is natural, as we consider any possible clustering and K is prior number of clusters.
+``` r
+rl1  <- list(r = r_reduct, N = S ,DRtype="1", K=16)  #prior is number of plant functional groups
+```
+
+For the Pitman--Yor process .Here, `DRtype =2` and we specify only `K`. The choice of *N* is the same.
 
 ``` r
 rl2  <- list(r = r_reduct, N = S ,DRtype="2", K=16)  #prior is number of plant functional groups
 ```
 
-For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify only `K`. The choice of *N* is the same.
-
-``` r
-rl3  <- list(r = r_reduct, N = S ,DRtype="3", K=16)  #prior is number of plant functional groups
-```
-
-For the Pitman--Yor process. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`.Here, `DRtype =3` and we specify `K` and variance `V`. The choice of *N* is the same.
-
-``` r
-rl4  <- list(r = r_reduct, N = S ,DRtype="3", K=16, V=20)  #prior is number of plant functional groups
-```
-
 For instance, we fit the model with the first specification
 
 ``` r
-ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
-fit2<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml2)
+ml1   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl1,PREDICTX = F)
+fit1<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml1)
 ```
 
-We get the `fit2` gjam object. This object is the same as the one from the original model, except several additional parameters. Firstly, we can plot the prior distribution of the alpha parameter and get expected number of clusters for this prior distribution of *α* (We suggest to test it, due to stochastic nature of hyperparameter tunning). *α* ∼ Ga(*ν*<sub>1</sub>, *ν*<sub>2</sub>). Where *ν*<sub>1</sub> is shape and *ν*<sub>2</sub> rate parameters corresponingly in the modelList `otherpar` list in the `reductList` in `modelList` of gjam object `fit2`.
+We get the `fit1` gjam object. This object is the same as the one from the original model, except several additional parameters. Firstly, we can plot the prior distribution of the alpha parameter and get expected number of clusters for this prior distribution of *α* (We suggest to test it, due to stochastic nature of hyperparameter tunning). *α* ∼ Ga(*ν*<sub>1</sub>, *ν*<sub>2</sub>). Where *ν*<sub>1</sub> is shape and *ν*<sub>2</sub> rate parameters corresponingly in the modelList `otherpar` list in the `reductList` in `modelList` of gjam object `fit1`.
 
 ``` r
-alpha <- concentation_parameter(fit2)
+alpha <- concentation_parameter(fit1)
 alpha$plot_prior
 alpha$plot_all
 ```
@@ -171,8 +120,4 @@ The function `concentation_parameter` is made for visualization purposes, it tak
 -   alpha vector of samples from prior distribution of *α* parameter
 -   E\_k expected number of clusters for this parameter of alpha
 
-Then we need to estimate the clusters. The cluster estimation is done by the function gjam\_cluster, which would return optimal cluster, that summarize posterior cluster distribution. We use the method proposedby Wade et al., 2018 where we use the clusters
-
-For building prior and posterior cluster distribution we can use the function...
-
-We can also consider applcation of the dimension reduction with type 3 We can use the variance to have less peaky distribution
+Then we need to estimate the clusters. The cluster estimation is done by the function `gjam_cluster`, which would return optimal cluster, that summarize posterior cluster distribution.
