@@ -189,7 +189,7 @@ PY_prior<- function(k,H, n, alpha, sigma, Cnk_mat){
 exp_var_PYM<- function(alpha,sigma,H=H, n=n, Mat_prior){
   x_vec<- 1:H
   pks<- sapply(x_vec, PY_prior,H=H, n=n, alpha=alpha, sigma=sigma,Cnk_mat=Mat_prior)
-  plot(x_vec, pks)
+ # plot(x_vec, pks)
   Exp <- sum(pks*x_vec)
   Var<- sum(((x_vec- Exp)^2)*pks)
   return(list(E= Exp, V=Var ))
