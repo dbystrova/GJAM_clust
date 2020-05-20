@@ -60,8 +60,8 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-iterations=50000
-burn_period=15000
+iterations=70000
+burn_period=20000
 K_prior=16
 r_reduct = 5
 
@@ -97,11 +97,17 @@ rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.25,K=K_pr
 ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
 fit_gjamPY1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml2)
 
+save(fit_gjamPY1, file =paste0(folderpath,"fit_gjamPY1.Rdata"))
+
 ##################################################################################################
 # PY_SB
-rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
-ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
-fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
+#rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
+#ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
+#fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
 
+
+#save(fit_gjamPY2, file =paste0(folderpath,"fit_gjamPY2.Rdata"))
+
+########
 
 
