@@ -185,7 +185,7 @@ kable(cbind(data.frame( Measure = rbind("AUC")), rbind(AUC_fin_table)), format="
 #Sigma
 df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
-df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
+df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjamPY1$modelList$burnin:fit_gjamPY1$modelList$ng,])))
 df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 #pdf(file = "Plots/Effective_size_sigma.pdf", width= 8.27, height = 9.69)
 rbind(df1 %>% mutate(var = "DP"),
@@ -459,11 +459,13 @@ VI_fin_table_ARdist2<- tibble(GJAM = arandi(DP_clust2$VI_est, True_clust$K_n),GJ
 
 ############################################################################################################
 # 
-# A=load_object("PCA_analysis/r5_25/Clusters_modells.Rdata")
-# c1<-PY1_clust$VI_est
+A=load_object("PCA_analysis/r5/Clusters_modells_1.Rdata")
+ c1<-PY1_clust$VI_est
 # c2<-DP1_clust$VI_est
 # 
-# arandi(A$ClustPY1,c1 )
+arandi(A$ClustPY1,c1 )
+arandi(A$ClustPY1,PY1_clust2$VI_est )
+
 # arandi(A$ClustDP2,c2)
 # arandi(c1,c2)
 # 

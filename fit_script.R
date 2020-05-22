@@ -1,5 +1,6 @@
 ## Fitting the models
 #rm(list=ls())
+#setwd("~/Documents/GitHub/GJAM_clust")
 library(repmis)
 library(gjam)
 library(MASS)
@@ -29,6 +30,7 @@ library(viridis)
 library(rust)
 library(gtools)
 library(CryptRndTest)
+library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 Rcpp::sourceCpp('src/user_fns.cpp')
 
@@ -60,18 +62,14 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-iterations=50000
-burn_period=15000
+iterations=70000
+burn_period=20000
 K_prior=16
 r_reduct = 5
 
 folderpath="PCA_analysis/r5/"
 
-##conditional prediction
-columns<-1:ncol(Ydata_train)
-ycs<- sample(columns, 10)
-y_c_p <-columns[ !columns %in% ycs]
-##### Model spceification
+##################################################################################################
 
 rl <- list(r =r_reduct, N = S)
 ml   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl,PREDICTX = F)
@@ -90,19 +88,23 @@ save(fit_gjamDP1, file =paste0(folderpath,"fit_gjamDP1.Rdata"))
 ##################################################################################################
 # PYM
 
-load("IJulia_part/Cnk_mat_112_025.Rdata")
-load("IJulia_part/Cnk_mat_112_H025.Rdata")
-par = compute_alpha_PYM(H=112,n=112,sigma=0.25,Mat_prior= Cnk_112_112_H025, K=16)
-rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.25,K=K_prior, Precomp_mat=Cnk_112_112_025)
+load("IJulia_part/Cnk_mat_112_05.Rdata")
+load("IJulia_part/Cnk_mat_112_H05.Rdata")
+par = compute_alpha_PYM(H=112,n=112,sigma=0.5,Mat_prior= Cnk_112_112_H05, K=16)
+
+rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.5,K=K_prior, Precomp_mat=Cnk_112_112_05)
 ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
 fit_gjamPY1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml2)
 
+save(fit_gjamPY1, file =paste0(folderpath,"fit_gjamPY1.Rdata"))
+
 ##################################################################################################
 # PY_SB
-rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
-ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
-fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
-
+ rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
+ ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
+ fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
+ 
+ save(fit_gjamPY2, file =paste0(folderpath,"fit_gjamPY2.Rdata"))
 
 
 
