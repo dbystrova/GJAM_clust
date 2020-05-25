@@ -1,3 +1,4 @@
+### This is the version of analysis where we run the model 2 times and do not combine the chains after
 ## Fitting the models
 #rm(list=ls())
 #setwd("~/Documents/GitHub/GJAM_clust")
@@ -11,6 +12,7 @@ library(arm)
 library(Rcpp)
 library(ggplot2)
 library(AUC)
+library(rlist)
 library(formattable)
 library(mcclust.ext)
 library(reshape2)
@@ -67,12 +69,15 @@ Colnames_Y<- tibble(CN = 1:112, CODE_CBNA=colnames(Ydata))
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
+
+
 #iterations=1000
 #burn_period=300
-#K_prior=16
-#r_reduct = 5
+K_prior=16
+r_reduct = 5
 
 folderpath="PCA_analysis/r5/"
+folderpath2="PCA_analysis/r5_2/"
 
 #conditional prediction
 columns<-1:ncol(Ydata_train)
@@ -101,13 +106,21 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 
 
-
-
-## Load models
+## Load models 1st run
 fit_gjam<- load_object(paste0(folderpath,"fit_gjam.Rdata"))
 fit_gjamDP1<- load_object(paste0(folderpath,"fit_gjamDP1.Rdata"))
 fit_gjamPY1<- load_object(paste0(folderpath,"fit_gjamPY1.Rdata"))
 fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
+fit_gjamPY12<- load_object(paste0(folderpath,"fit_gjamPY1_05.Rdata"))
+
+
+## Load models 2nd run
+fit_gjam_2<- load_object(paste0(folderpath2,"fit_gjam.Rdata"))
+fit_gjamDP1_2<- load_object(paste0(folderpath3,"fit_gjamDP1.Rdata"))
+fit_gjamPY1_2<- load_object(paste0(folderpath2,"fit_gjamPY1.Rdata"))
+fit_gjamPY12_2<- load_object(paste0(folderpath2,"fit_gjamPY1_05.Rdata"))
+
+#fit_gjamPY2<- load_object(paste0(folderpath,"fit_gjamPY2.Rdata"))
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
@@ -161,6 +174,20 @@ gjamDP1<- model_prediction_summary(model=fit_gjamDP1, list_out_s=new_out,list_in
 gjamPY1<- model_prediction_summary(model=fit_gjamPY1, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 gjamPY2<- model_prediction_summary(model=fit_gjamPY2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
 
+gjamDP_2<- model_prediction_summary(model=fit_gjam_2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+gjamDP1_2<- model_prediction_summary(model=fit_gjamDP1_2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+gjamPY1_2<- model_prediction_summary(model=fit_gjamPY1_2, list_out_s=new_out,list_in_s=new_in , list_cond= new_cond, Ytest=Ydata_test, Ytrain=Ydata_train)
+
+##Correlation list
+Cor_DP<- list()
+Cor_DP1<- list()
+Cor_PY1<- list()
+
+#Convergence of parameters
+Cor_DP<- list.append(Cor_DP, cor(gjamDP$AUC_out, gjamDP_2$AUC_out), cor(gjamDP$AUC_in, gjamDP_2$AUC_in))
+Cor_DP1<- list.append(Cor_DP1, cor(gjamDP1$AUC_out, gjamDP1_2$AUC_out), cor(gjamDP1$AUC_in, gjamDP1_2$AUC_in))
+Cor_PY1<- list.append(Cor_PY1, cor(gjamPY1$AUC_out, gjamPY1_2$AUC_out), cor(gjamPY1$AUC_in, gjamPY1_2$AUC_in))
+
 ####Prediction for all models 
 AUC_data<- tibble(GJAM=gjamDP$AUC_out, GJAM1=gjamDP1$AUC_out, PY1= gjamPY1$AUC_out , PY2= gjamPY2$AUC_out)
 AUC_data_in<-  tibble(GJAM=gjamDP$AUC_in, GJAM1=gjamDP1$AUC_in, PY1= gjamPY1$AUC_in , PY2= gjamPY2$AUC_in)
@@ -184,7 +211,7 @@ kable(cbind(data.frame( Measure = rbind("AUC")), rbind(AUC_fin_table)), format="
 
 #Convergence of Sigma
 #Sigma
-df1<- tibble(ES= effectiveSize(mcmc(c$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
+df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,]) ))
 df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
 df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[fit_gjam$modelList$burnin:fit_gjam$modelList$ng,])))
@@ -196,6 +223,27 @@ rbind(df1 %>% mutate(var = "DP"),
       ) %>% 
   ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
 #dev.off()
+
+df1<- tibble(ES= effectiveSize(mcmc(fit_gjam$chains$sgibbs[thin_5,])))
+df2<- tibble( ES=effectiveSize(mcmc(fit_gjamDP1$chains$sgibbs[thin_5,]) ))
+df3<- tibble(ES=effectiveSize(mcmc(fit_gjamPY1$chains$sgibbs[thin_5,])))
+df4<- tibble(ES =effectiveSize(mcmc(fit_gjamPY2$chains$sgibbs[thin_5,])))
+#pdf(file = "Plots/Effective_size_sigma.pdf", width= 8.27, height = 9.69)
+rbind(df1 %>% mutate(var = "DP"),
+      df2 %>%  mutate(var = "DP1"), 
+      df3 %>% mutate(var = "PY1")
+      #,df4 %>%  mutate(var = "PY2")
+) %>% 
+  ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
+#dev.off()
+
+
+
+thin_5<- seq(20001, 70000, by =5)
+s1<- mcmc(fit_gjam$chains$sgibbs[thin_5,])
+effectiveSize(s1)
+##Convergence of the sigma_matrix_coefficients
+
 
 #pdf(file = "Plots/Effective_size_beta.pdf", width= 8.27, height = 9.69)
 
@@ -226,6 +274,43 @@ p_DP1 =tibble(it= 1: length(fit_gjamDP1$chains$alpha.DP_g),
         plot.title = element_text(size = 15)) +theme(legend.text=element_text(size=15))
 
 
+
+### convergence to alpha DP1
+
+alpha_ch_1<- fit_gjamDP1$chains$alpha.DP_g[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP1$modelList$ng]
+alpha_ch_2<- fit_gjamDP1_2$chains$alpha.DP_g[(fit_gjamDP1_2$modelList$burnin+1):fit_gjamDP1_2$modelList$ng]
+
+plot(1:50000,alpha_ch_2, type="l", col="red")
+lines(1:50000,alpha_ch_1)
+alpha_chains  = mcmc.list(mcmc(alpha_ch_1), mcmc(alpha_ch_2))
+gelman.diag(alpha_chains)
+gelman.plot(alpha_chains)
+lattice::xyplot(alpha_chains, autoburinin=FALSE)
+effectiveSize(mcmc(alpha_ch_1))
+
+non_c_chains_1 <- fit_gjamDP1$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,c("r-5_N-107")]
+non_c_chains_2 <- fit_gjamDP_2$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,c("r-5_N-107")]
+non_c_chain  = mcmc.list(mcmc(non_c_chains_1), mcmc(non_c_chains_2))
+gelman.diag(non_c_chain)
+gelman.plot(non_c_chain)
+
+lattice::xyplot(non_c_chain, autoburinin=FALSE)
+
+non_c_chains_1 <- fit_gjamDP1$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,c("r-1_N-25")]
+non_c_chains_2 <- fit_gjamDP1_2$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,c("r-1_N-25")]
+non_c_chain  = mcmc.list(mcmc(non_c_chains_1), mcmc(non_c_chains_2))
+gelman.diag(non_c_chain)
+gelman.plot(non_c_chain)
+lattice::xyplot(non_c_chain, autoburinin=FALSE)
+
+sigma_chain_1 <- mcmc(fit_gjamDP1$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,], thin=5)
+sigma_chain_2 <- mcmc(fit_gjamDP1_2$chains$sgibbs[(fit_gjamPY1_2$modelList$burnin+1):fit_gjamPY1_2$modelList$ng,], thin=5)
+sigma_chains  = mcmc.list(sigma_chain_1, sigma_chain_2)
+gelman_sigma <- gelman.diag(sigma_chains)
+
+
+gelman_sigma$psrf[which(gelman_sigma$psrf[,1]>1.1),1]
+lattice::xyplot(sigma_chains, autoburinin=FALSE)
 #tibble(ES =effectiveSize(mcmc(fit_gjamDP2$chains$alpha.DP_g)))
 
 #pdf(file = "Plots/Posterior_for_DP_parameters.pdf", width= 8.27, height = 9.69)
@@ -252,11 +337,6 @@ plot(p_DP1)
 #  ggplot(aes(ES, color = var, fill = var, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
 
 
-
-alpha<-mcmc(fit_gjamDP1$chains$alpha.DP_g)
-plot(alpha,main="alpha DP")
-acfplot(alpha)
-cumuplot(alpha)
 
 
 #### Add prior/posterior plot
@@ -407,11 +487,18 @@ gjamClust_full_test<- function(model, K=K_prior, true_clust =True_clust$K_n ){
 
 
 
-DP_clust<- gjamClust_full_test(model= fit_gjam)
-DP1_clust<- gjamClust_full_test(model= fit_gjamDP1)
-PY1_clust<- gjamClust_full_test(model= fit_gjamPY1)
-PY2_clust<- gjamClust_full_test(model= fit_gjamPY2)
+#DP_clust_full<- gjamClust_full_test(model= fit_gjam)
+#DP1_clust_full<- gjamClust_full_test(model= fit_gjamDP1)
+#PY1_clust_full<- gjamClust_full_test(model= fit_gjamPY1)
+#PY2_clust_full<- gjamClust_full_test(model= fit_gjamPY2)
 
+if("other" %in% colnames(model$inputs$y)){
+  sp_num<- ncol(model$inputs$y)-1
+} 
+MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
+CM_DP<-  comp.psm(MatDP)
+mbind_DP.ext <- minbinder.ext(CM_DP,MatDP, method="all",include.greedy = TRUE)
+vi_DP.ext <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
 
 
 
@@ -419,6 +506,16 @@ DP_clust<- gjamClust(model= fit_gjam)
 DP1_clust<- gjamClust(model= fit_gjamDP1)
 PY1_clust<- gjamClust(model= fit_gjamPY1)
 PY2_clust<- gjamClust(model= fit_gjamPY2)
+
+
+
+DP_clust_2<- gjamClust(model= fit_gjam_2)
+DP1_clust_2<- gjamClust(model= fit_gjamDP1_2)
+PY1_clust_2<- gjamClust(model= fit_gjamPY1_2)
+
+arandi(DP_clust$VI_est,DP_clust_2$VI_est)
+arandi(DP1_clust$VI_est,DP1_clust_2$VI_est)
+arandi(PY1_clust$VI_est,PY1_clust_2$VI_est)
 
 #### Compare the obtained estimates with the PFG clusters
 
@@ -449,14 +546,14 @@ gjamClust2_full<- function(model, K = K_prior,  true_clust =True_clust$K_n){
   LF_value<- c()
   VI_list<- list()
   MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
-  start_list<- list(1:(dim(CM_DP)[1]), sample(1:K,dim(CM_DP)[1],replace = TRUE), true_clust)
+  start_list<- list(1:(dim(MatDP)[2]), sample(1:K,dim(MatDP)[2],replace = TRUE), true_clust)
   for (i in 1:length(start_list)){
     DP_grEPL<- MinimiseEPL(MatDP, pars = list(decision_init=start_list[[i]], loss_type = "VI"))
     VI_list<- list.append(VI_list, DP_grEPL$decision)
     LF_value<- c(LF_value, DP_grEPL$EPL)
   }
   #start.cl =  True_clust$K_n
-   return(list( VI_est = DP_grEPL$decision, EPL_value =  DP_grEPL$EPL))
+   return(list( VI_est = VI_list, EPL_value = LF_value))
 }
 
 
@@ -477,12 +574,30 @@ gjamClust2<- function(model, pars =list("VI")){
 
 
 
+DP_clust2_full<- gjamClust2_full(model= fit_gjam)
+DP1_clust2_full<- gjamClust2_full(model= fit_gjamDP1)
+PY1_clust2_full<- gjamClust2_full(model= fit_gjamPY1)
+PY2_clust2_full<- gjamClust2_full(model= fit_gjamPY2)
+
 
 DP_clust2<- gjamClust2(model= fit_gjam)
 DP1_clust2<- gjamClust2(model= fit_gjamDP1)
 PY1_clust2<- gjamClust2(model= fit_gjamPY1)
 PY2_clust2<- gjamClust2(model= fit_gjamPY2)
+PY12_clust2<- gjamClust2(model= fit_gjamPY12)
 
+
+DP_clust2_2<- gjamClust2(model= fit_gjam_2)
+DP1_clust2_2<- gjamClust2(model= fit_gjamDP1_2)
+PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
+PY12_clust2_2<- gjamClust2(model= fit_gjamPY12_2)
+
+arandi(DP_clust2$VI_est,DP_clust2_2$VI_est)
+arandi(DP1_clust2$VI_est,DP1_clust2_2$VI_est)
+arandi(PY1_clust2$VI_est,PY1_clust2_2$VI_est)
+arandi(PY12_clust2$VI_est,PY12_clust2_2$VI_est)
+arandi(PY1_clust2$VI_est, PY12_clust2$VI_est)
+arandi(PY1_clust2_2$VI_est, PY12_clust2_2$VI_est)
 
 VI_fin_table_K2<-tibble(GJAM = length(unique(DP_clust2$VI_est)),GJAM1=length(unique(DP1_clust2$VI_est)),PY1=length(unique(PY1_clust2$VI_est)),PY2=length(unique(PY2_clust2$VI_est)))
 VI_fin_table_VIdist2<-  tibble(GJAM = vi.dist(DP_clust2$VI_est, True_clust$K_n),GJAM1 = vi.dist(DP1_clust2$VI_est, True_clust$K_n),PY1= vi.dist(PY1_clust2$VI_est, True_clust$K_n),PY2= vi.dist(PY2_clust2$VI_est, True_clust$K_n))

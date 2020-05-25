@@ -60,18 +60,13 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-iterations=70000
-burn_period=20000
+iterations=80000
+burn_period=30000
 K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r5/"
+folderpath="PCA_analysis/r5_5/"
 
-##conditional prediction
-columns<-1:ncol(Ydata_train)
-ycs<- sample(columns, 10)
-y_c_p <-columns[ !columns %in% ycs]
-##### Model spceification
 
 rl <- list(r =r_reduct, N = S)
 ml   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl,PREDICTX = F)
@@ -81,7 +76,7 @@ save(fit_gjam, file = paste0(folderpath,"fit_gjam.Rdata"))
 
 ##################################################################################################
 
-rl1 <- list(r = r_reduct, N = S,DRtype="1", K=K_prior) #prior is Number of plant functional groups
+rl1 <- list(r = r_reduct, N = S,DRtype="1", K=K_prior) #prior is the number of plant functional groups
 ml1   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl1,PREDICTX = F) #change ml
 fit_gjamDP1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml1)
 
@@ -90,10 +85,10 @@ save(fit_gjamDP1, file =paste0(folderpath,"fit_gjamDP1.Rdata"))
 ##################################################################################################
 # PYM
 
-load("IJulia_part/Cnk_mat_112_025.Rdata")
-load("IJulia_part/Cnk_mat_112_H025.Rdata")
-par = compute_alpha_PYM(H=112,n=112,sigma=0.25,Mat_prior= Cnk_112_112_H025, K=16)
-rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.25,K=K_prior, Precomp_mat=Cnk_112_112_025)
+load("IJulia_part/Cnk_mat_112_05.Rdata")
+load("IJulia_part/Cnk_mat_112_H05.Rdata")
+par = compute_alpha_PYM(H=112,n=112,sigma=0.5,Mat_prior= Cnk_112_112_H05, K=16)
+rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.5,K=K_prior, Precomp_mat=Cnk_112_112_05)
 ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
 fit_gjamPY1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml2)
 

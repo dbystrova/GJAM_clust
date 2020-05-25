@@ -84,8 +84,8 @@ dev.off()
 
 ng
 #compute acceptance ratio to validate adaptation
-(length(rle(fit2$chains$alpha.DP_g)[[1]])-1)/ng
-
+(length(rle(fit_gjamDP1$chains$alpha.DP_g)[[1]])-1)/ng
+#0.143/ 0.1799
 
 alpha<-fit4$chains$alpha.PY_g
 alpha<-mcmc(alpha)
