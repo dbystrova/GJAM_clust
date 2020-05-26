@@ -83,12 +83,6 @@ folderpath4="PCA_analysis/r5_4/"
 folderpath5="PCA_analysis/r5_5/"
 folderpath6="PCA_analysis/r5_6/"
 
-#conditional prediction
-columns<-1:ncol(Ydata_train)
-ycs<- sample(columns, 10)
-y_c_p <-columns[ !columns %in% ycs]
-
-
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
 Species_names_groups<- read.csv("Bauges/PFG_Bauges_Description_2017.csv", sep="\t")
@@ -388,7 +382,7 @@ x$psrf[1,]
 gelman.plot(non_c_chain)
 #gelman.plot(alpha_chains)
 lattice::xyplot(non_c_chain, autoburinin=FALSE)
-effectiveSize(mcmc(c(non_c_chains_2,non_c_chains_1)))
+effectiveSize(mcmc(c(fit_gjam$chains$sgibbs)))
 summary(non_c_chains_1)
 summary(x$psrf[,1])
 

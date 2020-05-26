@@ -144,116 +144,49 @@ Cor_DP<- list.append(Cor_DP, cor(gjamDP_1$AUC_out, gjamDP_2$AUC_out), cor(gjamDP
 
 ### Convergence
 
-chain_1 <- fit_gjamDP$chains$sgibbs[(fit_gjamDP$modelList$burnin+1):fit_gjamDP$modelList$ng,c("r-1_N-1")]
-chain_2 <- fit_gjamDP_2$chains$sgibbs[(fit_gjamDP_2$modelList$burnin+1):fit_gjamDP_2$modelList$ng,c("r-1_N-1")]
+chain_1 <- fit_gjamDP$chains$sgibbs[(fit_gjamDP$modelList$burnin+1):fit_gjamDP$modelList$ng,]
+chain_2 <- fit_gjamDP_2$chains$sgibbs[(fit_gjamDP_2$modelList$burnin+1):fit_gjamDP_2$modelList$ng,]
 chains  = mcmc.list(mcmc(chain_1), mcmc(chain_2))
 GR_value =gelman.diag(chains)
 summary(GR_value$psrf[,1])
 hist(GR_value$psrf[,1])
-GR_value$psrf[GR_value$psrf[,1]>1.1,1]
-names<- names(GR_value$psrf[GR_value$psrf[,1]>1.1,1])
+#save(GR_value, file =  paste0(folderpath,"GR_value_sigma_DP.Rdata"))
 
-##### Ploting chains with large psf
-plots<- list()
-ESS <- list()
-for(key in names) {
-  non_c_chains_1 <- fit_gjamDP$chains$sgibbs[(fit_gjamDP$modelList$burnin +1):fit_gjamDP$modelList$ng,c(key)]
-  non_c_chains_2 <- fit_gjamDP_2$chains$sgibbs[(fit_gjamDP_2$modelList$burnin +1):fit_gjamDP_2$modelList$ng,c(key)]
-  non_c_chain  = mcmc.list(mcmc(non_c_chains_1), mcmc(non_c_chains_2))
-  x =gelman.diag(non_c_chain)
-  x$psrf[1,]
-  gelman.plot(non_c_chain)
-  p = tibble(iterations = 1:(fit_gjamDP$modelList$ng - fit_gjamDP$modelList$burnin),
-             chain_1 =non_c_chains_1,
-             chain_2 = non_c_chains_2 ) %>%
-    gather(Chains, trace, chain_1:chain_2)%>%
-    ggplot(aes(x=iterations,y=trace,col=Chains))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
-    xlab("iterations")+ylab("Sigma coeffcient") +theme_bw()
-  plots<- list.append(plots,p)
-  ESS<- list.append(ESS, effectiveSize(mcmc(c(non_c_chains_2,non_c_chains_1))))
-}
-
-prow <- plot_grid(
-  plots[[1]] + theme(legend.position='none'),
-  plots[[2]]+ theme(legend.position='none'),
-  plots[[3]]+ theme(legend.position='none'),
-  plots[[4]]+ theme(legend.position='none'),
-  plots[[5]]+ theme(legend.position='none'),
-  plots[[6]]+ theme(legend.position='none'),
-  plots[[7]]+ theme(legend.position='none'),
-  plots[[8]]+ theme(legend.position='none'),
-  nrow = 3, ncol=3)
-
-legend_b <- get_legend(plots[[8]]+theme(legend.position ='top'))
-p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
-
-pdf(file = "Plots/DP_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
-plot(p)
-dev.off()
 ###########################################################################
 
 df_sigma<- tibble(ES=effectiveSize(mcmc(rbind(chain_1, chain_2))))
 df_sigma%>% ggplot(aes(ES, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
-summary(df_sigma)
+#summary(df_sigma)
 #min =100
 save(df_sigma, file =  paste0(folderpath,"Conv_sigma_DP.Rdata"))
 ###### Convergence for beta coefficients
 other_values<- c("other_PC1", "other_PC2","other_I(PC1^2)","other_I(PC2^2)","other_intercept")
-chain_beta_1 <- chain_1$chains$bgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY1$modelList$ng,1:(dim(fit_gjamPY1$chains$bgibbs)[2]-5)]
-chain_beta_2 <- fit_gjamPY1_2$chains$bgibbs[(fit_gjamPY1_2$modelList$burnin+1):fit_gjamPY1_2$modelList$ng,1:(dim(fit_gjamPY1$chains$bgibbs)[2]-5)]
+chain_beta_1 <- fit_gjamDP$chains$bgibbs[(fit_gjamDP$modelList$burnin+1):fit_gjamDP$modelList$ng,1:(dim(fit_gjamDP$chains$bgibbs)[2]-5)]
+chain_beta_2 <- fit_gjamDP_2$chains$bgibbs[(fit_gjamDP_2$modelList$burnin+1):fit_gjamDP_2$modelList$ng,1:(dim(fit_gjamDP_2$chains$bgibbs)[2]-5)]
 beta_chains  = mcmc.list(mcmc(chain_beta_1), mcmc(chain_beta_2))
 GR_value_beta =gelman.diag(beta_chains)
 summary(GR_value_beta$psrf[,1])
 hist(GR_value_beta$psrf[,1])
-GR_value_beta$psrf[GR_value_beta$psrf[,1]>1.1,1]
-names<- names(GR_value_beta$psrf[GR_value_beta$psrf[,1]>1.1,1])
+#save(GR_value_beta, file =  paste0(folderpath,"GR_value_beta_DP.Rdata"))
 
-plots<- list()
-for(key in names) {
-  non_c_chains_1 <- fit_gjamPY1$chains$bgibbs[(fit_gjamPY1$modelList$burnin +1):fit_gjamPY1$modelList$ng,c(key)]
-  non_c_chains_2 <- fit_gjamPY1_2$chains$bgibbs[(fit_gjamPY1_2$modelList$burnin +1):fit_gjamPY1_2$modelList$ng,c(key)]
-  non_c_chain  = mcmc.list(mcmc(non_c_chains_1), mcmc(non_c_chains_2))
-  x =gelman.diag(non_c_chain)
-  print(x$psrf[1,])
-  gelman.plot(non_c_chain)
-  p = tibble(iterations = 1:(fit_gjamPY1_2$modelList$ng - fit_gjamPY1_2$modelList$burnin),
-             chain_1 =non_c_chains_1,
-             chain_2 = non_c_chains_2 ) %>%
-    gather(Chains, trace, chain_1:chain_2)%>%
-    ggplot(aes(x=iterations,y=trace,col=Chains))+geom_line(alpha=0.5)+ scale_color_viridis(discrete=TRUE)+
-    xlab("iterations")+ylab("Sigma coeffcient") +theme_bw()
-  plots<- list.append(plots,p)
-}
-
-prow <- plot_grid(
-  plots[[1]] + theme(legend.position='none'),
-  plots[[2]]+ theme(legend.position='none'),
-  nrow = 2)
-legend_b <- get_legend(plots[[2]]+theme(legend.position ='top'))
-p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
-
-#pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
-#plot(p)
-#dev.off()
-
-df_beta<- tibble(ES= effectiveSize(mcmc(c(chain_beta_1, chain_beta_2))))
+df_beta<- tibble(ES= effectiveSize(mcmc(rbind(chain_beta_1, chain_beta_2))))
 df_beta %>%ggplot(aes(ES))+ geom_histogram( position="identity", alpha=0.5) 
-save(df_beta, file =  paste0(folderpath,"Conv_beta_PY1.Rdata"))
+save(df_beta, file =  paste0(folderpath,"Conv_beta_DP.Rdata"))
 
 ###########################################################################################################
 ############################Trace plot##########################################################################
 #pdf(file = "Plots/Trace_plot_partitions.pdf", width= 8.27, height = 9.69)
-trace_chain = fit_PY_comb$chains$kgibbs
-trace_chain_1 = apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))
-trace_chain_2 = apply(fit_gjamPY1_2$chains$kgibbs,1,function(x) length(unique(x)))
+trace_chain = fit_DP_comb$chains$kgibbs
+trace_chain_1 = apply(fit_gjamDP$chains$kgibbs,1,function(x) length(unique(x)))
+trace_chain_2 = apply(fit_gjamDP_2$chains$kgibbs,1,function(x) length(unique(x)))
 
-df_trace_PY1<- tibble(it= 1: length(apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))),
-                      PY1=trace_chain_1,
-                      PY1_2 = trace_chain_2)
-save(df_trace_PY1, file =  paste0(folderpath,"PY1_k_chains.Rdata"))
+df_trace_DP<- tibble(it= 1: length(apply(fit_gjamDP$chains$kgibbs,1,function(x) length(unique(x)))),
+                      DP_1=trace_chain_1,
+                      DP_2 = trace_chain_2)
+#save(df_trace_DP, file =  paste0(folderpath,"DP_k_chains.Rdata"))
 
-df_trace_PY1 %>%
-  gather(Chains, trace, PY1:PY1_2)%>%
+df_trace_DP %>%
+  gather(Chains, trace, DP_1:DP_2)%>%
   ggplot(aes(x=it,y=trace,col=Chains))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
   labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")+
   theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
@@ -264,8 +197,8 @@ df_trace_PY1 %>%
 
 ##################################Clustering #####################################
 sp_num<- ncol(Ydata)-1
-K_chain_1 <- fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin +1):fit_gjamPY1$modelList$ng,]
-K_chain_2 <- fit_gjamPY1_2$chains$kgibbs[(fit_gjamPY1_2$modelList$burnin +1):fit_gjamPY1_2$modelList$ng,]
+K_chain_1 <- fit_gjamDP$chains$kgibbs[(fit_gjamDP$modelList$burnin +1):fit_gjamDP$modelList$ng,]
+K_chain_2 <- fit_gjamDP_2$chains$kgibbs[(fit_gjamDP_2$modelList$burnin +1):fit_gjamDP_2$modelList$ng,]
 K_chain = rbind(K_chain_1,K_chain_2 )
 # MatDP<- relabel_clust(K_chain[,1:sp_num])
 # CM_DP<-  comp.psm(MatDP)
@@ -283,58 +216,58 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 # arandi(DP_grEPL$decision, Cluster_models_2$ClustPY1)
 # arandi(vi_DP.ext$cl[1,], Cluster_models_2$ClustPY1)
 
-#PY1_clust<- gjamClust_full_test(model= fit_PY_comb)
-#save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
-PY1_clust<- gjamClust(model= fit_PY_comb)
+DP_clust_full<- gjamClust_full_test(model= fit_DP_comb)
+#save(DP_clust_full, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_DP.Rdata"))
+DP_clust<- gjamClust(model= fit_DP_comb)
 
-#PY1_clust_1<- gjamClust(model= fit_gjamPY1)
-#PY1_clust_2<- gjamClust(model= fit_gjamPY1_2)
+DP_clust_1<- gjamClust(model= fit_gjamDP)
+DP_clust_2<- gjamClust(model= fit_gjamDP_2)
 #arandi(PY1_clust_1$VI_est,PY1_clust_2$VI_est)
 
 #arandi(PY1_clust_2$VI_est,Cluster_models_2$ClustPY1)
 #### Compare the obtained estimates with the PFG clusters
 
-SW_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust$VI_est)),VI_dist = vi.dist(PY1_clust$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust$VI_est, True_clust$K_n))
-#save(SW_fin_table_PY1, file =  paste0(folderpath,"SW_tab_PY1.Rdata"))
-Cluster_PY1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust$VI_est)
-#save(Cluster_PY1_1, file =  paste0(folderpath,"Cluster_PY1_1.Rdata"))
+SW_fin_table_DP<-tibble(Model="DP",K=length(unique(DP_clust$VI_est)),VI_dist = vi.dist(DP_clust$VI_est, True_clust$K_n), AR_dist = arandi(DP_clust$VI_est, True_clust$K_n))
+#save(SW_fin_table_DP, file =  paste0(folderpath,"SW_tab_DP.Rdata"))
+Cluster_DP_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP=DP_clust$VI_est)
+#save(Cluster_DP_1, file =  paste0(folderpath,"Cluster_DP_1.Rdata"))
 
 ## Second clustering method
 ###########################
 
-PY1_clust2_full<- gjamClust2_full(model= fit_PY_comb)
-#save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
+DP_clust2_full<- gjamClust2_full(model= fit_DP_comb)
+#save(DP_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_DP.Rdata"))
 
-PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
-PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
+DP_clust2_1<- gjamClust2(model= fit_gjamDP)
+DP_clust2_2<- gjamClust2(model= fit_gjamDP_2)
 
 
-arandi(PY1_clust2_1$VI_est,PY1_clust2_2$VI_est)
-arandi(PY1_clust2_2$VI_est, Cluster_models_1$ClustPY1)
-arandi(PY1_clust2_2$VI_est, Cluster_models_2$ClustPY1)
-arandi(PY1_clust2_full$VI_est[[3]], Cluster_models_2$ClustPY1)
+arandi(DP_clust2_1$VI_est,DP_clust2_2$VI_est)
+arandi(DP_clust2_2$VI_est, Cluster_models_1$ClustDP)
+arandi(PY1_clust2_2$VI_est, Cluster_models_2$ClustDP)
+arandi(DP_clust2_full$VI_est[[1]], DP_clust2_1$VI_est)
 
 ### using true clust initialization
-PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init= True_clust$K_n, loss_type="VI"))
+DP_clust2 <- gjamClust2(model= fit_DP_comb,  pars =list(loss_type="VI"))
 
 
-GRE_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust2$VI_est)),VI_dist = vi.dist(PY1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust2$VI_est, True_clust$K_n))
-#save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
-#Cluster_PY1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust2$VI_est)
-save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
+GRE_fin_table_DP<-tibble(Model="DP",K=length(unique(DP_clust2$VI_est)),VI_dist = vi.dist(DP_clust2$VI_est, True_clust$K_n), AR_dist = arandi(DP_clust2$VI_est, True_clust$K_n))
+#save(GRE_fin_table_DP, file =  paste0(folderpath,"GRE_tab_DP.Rdata"))
+Cluster_DP_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP=DP_clust2$VI_est)
+#save(Cluster_DP_2, file =  paste0(folderpath,"Cluster_DP_2.Rdata"))
 
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
-Colnames_Y_clust<- merge(Colnames_Y, Cluster_PY1_2, by ="CODE_CBNA")
+Colnames_Y_clust<- merge(Colnames_Y, Cluster_DP_2, by ="CODE_CBNA")
 
 ### Covariance matrix for the mean 
-#pdf(file = "Plots/Correlation_matrix_PY.pdf", width= 8.27, height = 9.69)
-MDP= (fit_gjamPY1$parameters$corMu + fit_gjamPY1_2$parameters$corMu)/2
-Colnames_Y_clust$Sp_name_PY <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
-rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
-colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY1))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY),"ClustPY1"],length(unique(Colnames_Y_clust$ClustPY1))+1), function(x) colors_vir[x])
+#pdf(file = "Plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
+MDP= (fit_gjamDP$parameters$corMu + fit_gjamDP_2$parameters$corMu)/2
+Colnames_Y_clust$Sp_name_DP <- paste(Colnames_Y_clust$ClustDP, Colnames_Y_clust$species,sep="_")
+rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
+colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP))+1, option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP),"ClustDP"],length(unique(Colnames_Y_clust$ClustDP))+1), function(x) colors_vir[x])
 cols = colorRampPalette(c("dark blue","white","red"))
 col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
@@ -343,10 +276,11 @@ col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
 
 
 corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
-         type = "full", title= "Correlation for the PY model (original)", mar=c(0,0,1,0))
+         type = "full", title= "Correlation for the DP model (original)", mar=c(0,0,1,0))
 
 corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
-         method = "color",col=cols(200), type = "full",title= "Correlation for the PY model (PY groups)", mar=c(0,0,1,0))
+         method = "color",col=cols(200), type = "full",title= "Correlation for the DP model (DP groups)", mar=c(0,0,1,0))
+
 #dev.off()
 
 

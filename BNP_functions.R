@@ -63,7 +63,7 @@ compute_gamma_parameters<- function(fun,K,var_gamma=20){
   y=sapply(x, function(x) fun(x)) - K
   f_spline_smooth=smooth.spline(x, y) 
   roots <- newton2(f = function(x) predict(f_spline_smooth, x,deriv = 0)$y ,f_der=  function(x) predict(f_spline_smooth, x,deriv = 1)$y,x0=1,N=50)
-  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
+  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 200))$root
   #print(root)
   nu2<- roots[length(roots)]/ var_gamma
   nu1<- roots[length(roots)]*nu2

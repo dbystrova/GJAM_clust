@@ -145,6 +145,8 @@ chain_1 <- fit_gjamDP1$chains$sgibbs[(fit_gjamDP1$modelList$burnin+1):fit_gjamDP
 chain_2 <- fit_gjamDP1_2$chains$sgibbs[(fit_gjamDP1_2$modelList$burnin+1):fit_gjamDP1_2$modelList$ng,]
 chains  = mcmc.list(mcmc(chain_1), mcmc(chain_2))
 GR_value =gelman.diag(chains)
+#save(GR_value, file =  paste0(folderpath,"GR_value_sigma_DP1.Rdata"))
+
 summary(GR_value$psrf[,1])
 hist(GR_value$psrf[,1])
 GR_value$psrf[GR_value$psrf[,1]>1.1,1]
@@ -192,6 +194,8 @@ chain_beta_1 <- fit_gjamDP1$chains$bgibbs[(fit_gjamDP1$modelList$burnin+1):fit_g
 chain_beta_2 <- fit_gjamDP1_2$chains$bgibbs[(fit_gjamDP1_2$modelList$burnin+1):fit_gjamDP1_2$modelList$ng,1:(dim(fit_gjamDP1_2$chains$bgibbs)[2]-5)]
 beta_chains  = mcmc.list(mcmc(chain_beta_1), mcmc(chain_beta_2))
 GR_value_beta =gelman.diag(beta_chains)
+#save(GR_value_beta, file =  paste0(folderpath,"GR_value_beta_DP1.Rdata"))
+
 summary(GR_value_beta$psrf[,1])
 hist(GR_value_beta$psrf[,1])
 GR_value_beta$psrf[GR_value_beta$psrf[,1]>1.1,1]
@@ -366,7 +370,7 @@ arandi(DP1_clust2_full$VI_est[[3]], DP1_clust2$VI_est)
 ### using true clust initialization
 DP1_clust2 <- gjamClust2(model= fit_DP1_comb,  pars =list(decision_init= True_clust$K_n, loss_type="VI"))
 
-GRE_fin_table_DP1<-tibble(Model="PY1",K=length(unique(DP1_clust2$VI_est)),VI_dist = vi.dist(DP1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(DP1_clust2$VI_est, True_clust$K_n))
+GRE_fin_table_DP1<-tibble(Model="DP1",K=length(unique(DP1_clust2$VI_est)),VI_dist = vi.dist(DP1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(DP1_clust2$VI_est, True_clust$K_n))
 #save(GRE_fin_table_DP1, file =  paste0(folderpath,"GRE_tab_DP1.Rdata"))
 Cluster_DP1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP1=DP1_clust2$VI_est)
 #save(Cluster_DP1_2, file =  paste0(folderpath,"Cluster_DP1_2.Rdata"))

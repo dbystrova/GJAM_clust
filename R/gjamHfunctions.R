@@ -3639,7 +3639,7 @@ gjamFillMissingTimes <- function(xdata, ydata, edata, groups, times,
 #  rl
 #}
 
-##change J.Clark 
+
 
 .setupReduct <- function(modelList, S, Q, n){
  if((is.null(modelList$reductList$DRtype)) || ((modelList$reductList$DRtype=="basic"))){
@@ -13704,7 +13704,8 @@ lik.disc.fun<-function(discount,pvec,N,ro.disc,alpha){
 lik.alpha.DP.fun<-function(alpha,pvec,N,shape,rate){
   if(alpha<0){ stop("alpha is negative!")
   }else{
-    tmp<-log(gamma(alpha)) - N*log(gamma(alpha/N)) + sum(((alpha/N)-1)*log(pvec)) + (shape-1)*log(alpha) - rate*alpha
+  #  tmp<-log(gamma(alpha)) - N*log(gamma(alpha/N)) + sum(((alpha/N)-1)*log(pvec)) + (shape-1)*log(alpha) - rate*alpha
+     tmp<-lgamma(alpha) - N*lgamma(alpha/N) + sum(((alpha/N)-1)*log(pvec)) + (shape-1)*log(alpha) - rate*alpha
     
     
     return(tmp)
@@ -13912,7 +13913,7 @@ compute_gamma_parameters<- function(fun,K,var_gamma=20){
   y=sapply(x, function(x) fun(x)) - K
   f_spline_smooth=smooth.spline(x, y) 
   roots <- newton2(f = function(x) predict(f_spline_smooth, x,deriv = 0)$y ,f_der=  function(x) predict(f_spline_smooth, x,deriv = 1)$y,x0=1,N=50)
-  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
+  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 200))$root
   #print(root)
   nu2<- roots[length(roots)]/ var_gamma
   nu1<- roots[length(roots)]*nu2

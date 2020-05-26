@@ -549,9 +549,9 @@ Var<- sum(((x_vec- Exp)^2)*pks)
 #PY_prior(2,H=112, n=112, alpha=0.88, sigma=0.25,Cnk_mat=Cnk_112_112_025)
 
 
-x_vec<- 1:50
-
-pks<- sapply(x_vec, PY_prior,H=50, n=100, alpha=4.3, sigma=0.5,Cnk_mat=M2)
+x_vec<- 1:112
+load("IJulia_part/Cnk_mat_112_H025.Rdata")
+pks<- sapply(x_vec, PY_prior,H=112, n=112, alpha=0.653293, sigma=0.25,Cnk_mat=Cnk_112_112_H025)
 plot(x_vec, pks)
 
 exp<-sum(x_vec*pks)

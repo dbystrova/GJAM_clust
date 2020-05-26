@@ -69,9 +69,6 @@ Colnames_Y<- tibble(CN = 1:112, CODE_CBNA=colnames(Ydata))
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 
-
-#iterations=1000
-#burn_period=300
 K_prior=16
 r_reduct = 5
 
@@ -214,9 +211,9 @@ prow <- plot_grid(
 legend_b <- get_legend(plots[[8]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
-pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
+#pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
 plot(p)
-dev.off()
+#dev.off()
 ###########################################################################
 
 df_sigma<- tibble(ES=effectiveSize(mcmc(rbind(chain_1, chain_2))))
@@ -348,7 +345,7 @@ PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init= True_clu
 GRE_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust2$VI_est)),VI_dist = vi.dist(PY1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust2$VI_est, True_clust$K_n))
 #save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
 #Cluster_PY1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust2$VI_est)
-save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
+#save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
 
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
@@ -378,17 +375,71 @@ corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col
 
 
 
+
+
+
+
+
+
+##############################################################Covariance matrix chains ############################
+
+makeSymm <- function(m) {
+  m[upper.tri(m)] <- t(m)[upper.tri(m)]
+  return(m)
+}
+
+expandSigma_rmd <- function(sigma, S){
+  ss <- diag(S)
+  ss[lower.tri(ss,diag=T)] <- sigma
+  ss[upper.tri(ss)] <- t(ss)[upper.tri(ss)]
+  ss
+}
+
+cov_matrix<- function(fit, burn_period,iterations){
+  sgibbs<-fit$chains$sgibbs[burn_period:iterations,]
+  sigErrGibbs<-fit$chains$sigErrGibbs[burn_period:iterations]
+  kgibbs<-fit$chains$kgibbs[burn_period:iterations,]
+  sigma<-invsigma<-array(NA,dim=c(S,S,iterations-burn_period))
+  N<-fit$modelList$reductList$N
+  r<-fit$modelList$reductList$r
+  N_dim<-iterations-burn_period
+  seq= seq(1, N_dim, by =5)
+  sigma<-invsigma<-array(NA,dim=c(S,S,length(seq)))
+  for(j in 1:length(seq)){
+    Z  <- matrix(sgibbs[j,],N,r)
+    sigma[,,j] <- .expandSigma(sigErrGibbs[seq[j]], S, Z = Z, kgibbs[seq[j],], REDUCT = T) #sigma
+    invsigma[,,j] <- invWbyRcpp(sigErrGibbs[seq[j]], Z[kgibbs[seq[j],],]) #inverse sigma
+  } 
+  sigma_mean<-apply(sigma,c(1,2),mean) 
+  sigma_q05<-apply(sigma,c(1,2),quantile,0.05) 
+  sigma_q95<-apply(sigma,c(1,2),quantile,0.95) 
+  Sigma_sign<--cov2cor(sigma_mean*(!(sigma_q95>0 & sigma_q05<0)))
+  ## Inverse
+  invsigma_mean<-apply(invsigma,c(1,2),mean) 
+  invsigma_q05<-apply(invsigma,c(1,2),quantile,0.05) 
+  invsigma_q95<-apply(invsigma,c(1,2),quantile,0.95) 
+  INVSigma_sign<--cov2cor(sigma_mean*(!(invsigma_q95>0 & invsigma_q05<0)))
+  return(list(Sigma =Sigma_sign, InvS=  INVSigma_sign, S_mean=sigma_mean, IS_mean=invsigma_mean ))
+}
+
+
+A= cov_matrix(fit=fit_PY_comb, burn_period=fit_PY_comb$modelList$burnin+1,iterations=fit_PY_comb$modelList$ng)
+M= cov2cor(sigma_mean)
+corrplot(cov2cor(sigma_mean), diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
+         type = "full", title= "Correlation for the PY model (original)", mar=c(0,0,1,0))
+
+
+corrplot(Y, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
+         type = "full", title= "Correlation for the PY model (original)", mar=c(0,0,1,0))
+
+library("corpcor")
+X  = cov2cor(sigma_mean)
+Y = cor2pcor(fit_gjamPY1$parameters$corMu)
+
+X1 = cor2pcor(sigma_mean)
+
+X ==X1
 ######## Precision matrix ################################################################################
-library(qgraph)
-library(matlib)
-#inv_cor = solve(MDP)
-inv_cor = inv(MDP)
-
-PC_mat <- wi2net(inv_cor)
-
-### Get precision matrix from the Correlation
-PC_mat[abs(PC_mat)> 0.09] 
-## values  are  super  small 
 ########################################################################################
 #### Final Table
 form<-c(formula)
