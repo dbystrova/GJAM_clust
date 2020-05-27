@@ -11802,8 +11802,8 @@ sample_lk_mat<- function(nk_vec,v,sigma,H,M){
   U<- (Uv)^(1/sigma)
   x.rlap <- rlaptrans(N, lt.temp_st_pdf, c=alpha_post/(sigma*N), sigma, k=U)
   R_h<- x.rlap /sum(x.rlap)
-  P_h[c(as.numeric(c(names(n_k))))]<- W_h[1:length(n_k)] + W_h[length(n_k)]* R_h[1:length(n_k)]
-  P_h[-c(as.numeric(c(names(n_k))))] <-  W_h[length(n_k)]* R_h[(length(n_k)+1):N]
+  P_h[c(as.numeric(c(names(n_k))))]<- W_h[1:length(n_k)] + W_h[length(n_k)+1]* R_h[1:length(n_k)]
+  P_h[-c(as.numeric(c(names(n_k))))] <-  W_h[length(n_k)+1]* R_h[(length(n_k)+1):N]
   return(P_h)
 }
 

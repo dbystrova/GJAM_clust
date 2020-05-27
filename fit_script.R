@@ -62,10 +62,10 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 iterations=80000
 burn_period=30000
-K_prior=56
+K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r_wp/"
+folderpath="PCA_analysis/test/"
 
 
 rl <- list(r =r_reduct, N = S)

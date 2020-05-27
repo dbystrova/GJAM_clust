@@ -172,6 +172,8 @@ chain_1 <- fit_gjamPY1$chains$sgibbs[(fit_gjamPY1$modelList$burnin+1):fit_gjamPY
 chain_2 <- fit_gjamPY1_2$chains$sgibbs[(fit_gjamPY1_2$modelList$burnin+1):fit_gjamPY1_2$modelList$ng,]
 chains  = mcmc.list(mcmc(chain_1), mcmc(chain_2))
 GR_value =gelman.diag(chains)
+#save(GR_value, file =  paste0(folderpath,"GR_value_sigma_PY1.Rdata"))
+
 summary(GR_value$psrf[,1])
 hist(GR_value$psrf[,1])
 GR_value$psrf[GR_value$psrf[,1]>1.1,1]
@@ -202,18 +204,14 @@ prow <- plot_grid(
   plots[[2]]+ theme(legend.position='none'),
   plots[[3]]+ theme(legend.position='none'),
   plots[[4]]+ theme(legend.position='none'),
-  plots[[5]]+ theme(legend.position='none'),
-  plots[[6]]+ theme(legend.position='none'),
-  plots[[7]]+ theme(legend.position='none'),
-  plots[[8]]+ theme(legend.position='none'),
-  nrow = 3, ncol=3)
+  nrow = 2, ncol=2)
 
-legend_b <- get_legend(plots[[8]]+theme(legend.position ='top'))
+legend_b <- get_legend(plots[[1]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
-#pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
+pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
 plot(p)
-#dev.off()
+dev.off()
 ###########################################################################
 
 df_sigma<- tibble(ES=effectiveSize(mcmc(rbind(chain_1, chain_2))))
@@ -227,6 +225,8 @@ chain_beta_1 <- fit_gjamPY1$chains$bgibbs[(fit_gjamPY1$modelList$burnin+1):fit_g
 chain_beta_2 <- fit_gjamPY1_2$chains$bgibbs[(fit_gjamPY1_2$modelList$burnin+1):fit_gjamPY1_2$modelList$ng,1:(dim(fit_gjamPY1$chains$bgibbs)[2]-5)]
 beta_chains  = mcmc.list(mcmc(chain_beta_1), mcmc(chain_beta_2))
 GR_value_beta =gelman.diag(beta_chains)
+#save(GR_value_beta, file =  paste0(folderpath,"GR_value_beta_PY1.Rdata"))
+
 summary(GR_value_beta$psrf[,1])
 hist(GR_value_beta$psrf[,1])
 GR_value_beta$psrf[GR_value_beta$psrf[,1]>1.1,1]
@@ -257,10 +257,10 @@ legend_b <- get_legend(plots[[2]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
 #pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
-#plot(p)
+plot(p)
 #dev.off()
 
-df_beta<- tibble(ES= effectiveSize(mcmc(c(chain_beta_1, chain_beta_2))))
+df_beta<- tibble(ES= effectiveSize(mcmc(rbind(chain_beta_1, chain_beta_2))))
 df_beta %>%ggplot(aes(ES))+ geom_histogram( position="identity", alpha=0.5) 
 save(df_beta, file =  paste0(folderpath,"Conv_beta_PY1.Rdata"))
 
@@ -285,7 +285,7 @@ df_trace_PY1 %>%
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 16),
         plot.title = element_text(size = 20)) +theme(legend.text=element_text(size=15))
 
-
+#dev.off()
 ##################################Clustering #####################################
 sp_num<- ncol(Ydata)-1
 K_chain_1 <- fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin +1):fit_gjamPY1$modelList$ng,]
@@ -311,7 +311,7 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 #save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
 PY1_clust<- gjamClust(model= fit_PY_comb)
 
-#PY1_clust_1<- gjamClust(model= fit_gjamPY1)
+PY1_clust_1<- gjamClust(model= fit_gjamPY1)
 #PY1_clust_2<- gjamClust(model= fit_gjamPY1_2)
 #arandi(PY1_clust_1$VI_est,PY1_clust_2$VI_est)
 
@@ -329,18 +329,16 @@ Cluster_PY1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY
 PY1_clust2_full<- gjamClust2_full(model= fit_PY_comb)
 #save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
 
-PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
-PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
-
-
+#PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
+#PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
 arandi(PY1_clust2_1$VI_est,PY1_clust2_2$VI_est)
 arandi(PY1_clust2_2$VI_est, Cluster_models_1$ClustPY1)
 arandi(PY1_clust2_2$VI_est, Cluster_models_2$ClustPY1)
-arandi(PY1_clust2_full$VI_est[[3]], Cluster_models_2$ClustPY1)
+arandi(PY1_clust2_full$VI_est[[3]], Clusters_all_2_sorted$ClustDP1)
 
 ### using true clust initialization
 PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init= True_clust$K_n, loss_type="VI"))
-
+#save(PY1_clust2, file =  paste0(folderpath,"Clustering__PY1_v1.Rdata"))
 
 GRE_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust2$VI_est)),VI_dist = vi.dist(PY1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust2$VI_est, True_clust$K_n))
 #save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
@@ -473,5 +471,5 @@ Fin_tab_PY[,2]<- round(Fin_tab_PY[,2], 3)
 #save(Fin_tab_PY, file = paste0(folderpath,"Fin_tabPY_r5.Rdata"))
 #library("xlsx")
 # Write the first data set in a new workbook
-#write.xlsx(Fin_all, file = "Final_table.xlsx")
+#write.csv(Fin_tab_PY, file = "Final_tablePY1.csv")
 #########################################################################################

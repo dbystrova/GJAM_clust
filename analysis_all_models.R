@@ -98,7 +98,7 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 ### Effective Size
 
 df_beta_DP1<- load_object("PCA_analysis/r5/Conv_beta_DP1.Rdata")
-df_beta_PY<- load_object("PCA_analysis/r5/")
+df_beta_PY<- load_object("PCA_analysis/r5/Conv_beta_PY1.Rdata")
 df_beta_DP<- load_object("PCA_analysis/r5/")
 
 df_sigma_DP1<- load_object("PCA_analysis/r5/Conv_sigma_DP1.Rdata")
@@ -116,10 +116,12 @@ rbind(df_sigma_DP %>% mutate(Model = "DP"),
 ### Gelman-Rubin diagnostics
 GR_sigma_DP<- load_object("PCA_analysis/r5/GR_value_sigma_DP.Rdata")
 GR_sigma_DP1<- load_object("PCA_analysis/r5/GR_value_sigma_DP1.Rdata")
+GR_sigma_PY<- load_object("PCA_analysis/r5/GR_value_sigma_PY1.Rdata")
 
 
 GR_beta_DP<- load_object("PCA_analysis/r5/GR_value_beta_DP.Rdata")
 GR_beta_DP1<- load_object("PCA_analysis/r5/GR_value_beta_DP1.Rdata")
+GR_beta_DP1<- load_object("PCA_analysis/r5/GR_value_beta_PY1.Rdata")
 
 ### Results
 
@@ -169,7 +171,7 @@ DP1_clust_tab_SW <- load_object("PCA_analysis/r5/SW_tab_DP1.Rdata")
 PY_clust_tab_SW <- load_object("PCA_analysis/r5/SW_tab_PY1.Rdata")
 
 SW_tab<- rbind(DP_clust_tab_SW,DP1_clust_tab_SW,PY_clust_tab_SW)
-#write.xlsx(SW_tab, file = "SW_tab.xlsx")
+#write.csv(SW_tab, file = "SW_tab.csv")
 
 
 DP1_clust_tab_GRE <- load_object("PCA_analysis/r5/GRE_tab_DP1.Rdata")
@@ -184,7 +186,6 @@ GRE_tab<- rbind(DP1_clust_tab_GRE,DP_clust_tab_GRE,PY_clust_tab_GRE)
 
 
 ############################################ Clusters
-
 load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
 load("PCA_analysis/r5/Cluster_DP1_2.Rdata")
 load("PCA_analysis/r5/Cluster_PY1_1.Rdata")
@@ -206,8 +207,78 @@ Clusters_all_2<- merge(Clusters_all_2, True_clust[, c("CODE_CBNA", "PFG", "K_n")
 
 load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
 Clusters_all_2$CBN <- as.numeric(Clusters_all_2$CODE_CBNA)
-c1= Clusters_all_2[order(Clusters_all_2$CBN),3 ]
-c2= Cluster_DP_2$ClustDP
+Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+
+M= Clusters_all_1[order(Clusters_all_1$CBN),]
+B= Clusters_all_2[order(Clusters_all_2$CBN),]
+
+arandi(All_clusters$DP1, c1)
+arandi(All_clusters$DP1, c2)
+arandi(All_clusters$PY2, c1)
+arandi(All_clusters$PY2, c2)
+
+
+#### Pairwise distances
+
+########### Cluster distances with random 
+load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
+Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+
+Clusters_all_1_sorted= Clusters_all_1[order(Clusters_all_1$CBN),]
+Random_cluster <-  sample(1:16, size = 111, replace = TRUE)
+Random_cluster_w <-  sample(1:16, size = 111, replace = TRUE, prob=table(Clusters_all_1_sorted$K_n)/111)
+
+
+M_all<- data.frame()
+Clusters_by_Rand<-cbind(Clusters_all_1_sorted, tibble(RU=Random_cluster), tibble(RW= Random_cluster_w))
+Clusters_by_Rand_mat<- Clusters_by_Rand[,c("ClustDP1","ClustDP", "ClustPY1", "K_n", "RU", "RW")]
+Mat_dist<- matrix(NA, nrow=6, ncol=6)
+for(j in 1:6){
+  for (k in 1:6){
+    Mat_dist[j,k]= arandi(Clusters_by_Rand_mat[,j],Clusters_by_Rand_mat[,k])
+  }
+}
+M_print<- as.data.frame(round(Mat_dist,3))
+colnames(M_print)<- colnames(Clusters_by_Rand_mat)
+M_print$Model <- colnames(Clusters_by_Rand_mat)
+M_rand<- melt(M_print, id=c("Model"))
+M_rand$Model<- factor(M_rand$Model,levels = colnames(M_print)[1:6])
+Dist_rand.heatmap <- ggplot(data = M_rand, mapping = aes(x = variable,
+                                                         y = Model,
+                                                         fill = value, color='white')) + 
+  geom_tile(aes(fill = value)) + 
+  geom_text(aes(label = round(value, 2)), size=4)+
+  scale_fill_gradient(low = 'white', high = 'black', space = 'Lab')+
+  xlab(label = "AR distance for final cluster with Random clusters ")
+Dist_rand.heatmap
+
+#pdf(file = "Final_cluster_distances_AR.pdf")
+#print(Dist_rand.heatmap)
+#dev.off()
+
+
+########################################################################################
+
+arandi(Clusters_all_2_sorted$ClustDP1, Clusters_all_2_sorted$ClustPY1)
+arandi(Clusters_all_1_sorted$ClustPY1, Clusters_all_2_sorted$ClustPY1)
+
+
+arandi(Clusters_all_2_sorted$ClustDP1, DP1_clust2_wp$VI_est)
+arandi(Clusters_all_2_sorted$ClustPY1, PY1_clust2_wp$VI_est)
+arandi(Cluster_models_2$ClustPY1, PY1_clust2_wp$VI_est[[1]])
+
+
+load("~/Documents/GitHub/GJAM_clust/PCA_analysis/r5/Clusters_all_1.Rdata")
+Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+Clusters_all_1_sorted= Clusters_all_1[order(Clusters_all_1$CBN),]
+
+arandi(Clusters_all_1_sorted$ClustDP1, DP1_clust2_wp$VI_est)
+arandi(Clusters_all_1_sorted$ClustPY1, PY1_clust2_wp$VI_est[[1]])
+
+#### Anova
+
+
+
 ############################################################################################################
 #### Plot prior for PY1
 x_vec<- 1:112
