@@ -38,7 +38,7 @@ Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
 source("BNP_functions.R")
-source('analysis_functions.R')
+source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
   load(file = file, envir = tmp)
@@ -97,13 +97,13 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 ### Effective Size
 
-df_beta_DP1<- load_object("PCA_analysis/r5/Conv_beta_DP1.Rdata")
-df_beta_PY<- load_object("PCA_analysis/r5/Conv_beta_PY1.Rdata")
-df_beta_DP<- load_object("PCA_analysis/r5/")
+df_beta_DP1<- load_object("PCA_analysis/r5/DP1_analysis/Conv_beta_DP1.Rdata")
+df_beta_PY<- load_object("PCA_analysis/r5/PY_analysis/Conv_beta_PY1.Rdata")
+df_beta_DP<- load_object("PCA_analysis/r5/DP_analysis/Conv_beta_DP.Rdata")
 
-df_sigma_DP1<- load_object("PCA_analysis/r5/Conv_sigma_DP1.Rdata")
-df_sigma_PY<- load_object("PCA_analysis/r5/Conv_sigma_PY1.Rdata")
-df_sigma_DP<- load_object("PCA_analysis/r5/Conv_sigma_DP.Rdata")
+df_sigma_DP1<- load_object("PCA_analysis/r5/DP1_analysis/Conv_sigma_DP1.Rdata")
+df_sigma_PY<- load_object("PCA_analysis/r5/PY_analysis/Conv_sigma_PY1.Rdata")
+df_sigma_DP<- load_object("PCA_analysis/r5/DP_analysis/Conv_sigma_DP.Rdata")
 
 #pdf
 rbind(df_sigma_DP %>% mutate(Model = "DP"),
@@ -113,24 +113,33 @@ rbind(df_sigma_DP %>% mutate(Model = "DP"),
   ggplot(aes(ES, color = Model, fill = Model))+ geom_histogram( position="identity",alpha=0.3, bins=50) 
 #dev.off()
 
+#pdf
+rbind(df_beta_DP1 %>% mutate(Model = "DP"),
+      df_beta_PY %>%  mutate(Model = "DP1"), 
+      df_beta_DP %>% mutate(Model = "PY")
+) %>% 
+  ggplot(aes(ES, color = Model, fill = Model))+ geom_histogram( position="identity",alpha=0.3, bins=50) 
+#dev.off()
+
+
 ### Gelman-Rubin diagnostics
-GR_sigma_DP<- load_object("PCA_analysis/r5/GR_value_sigma_DP.Rdata")
-GR_sigma_DP1<- load_object("PCA_analysis/r5/GR_value_sigma_DP1.Rdata")
-GR_sigma_PY<- load_object("PCA_analysis/r5/GR_value_sigma_PY1.Rdata")
+GR_sigma_DP<- load_object("PCA_analysis/r5/DP_analysis/GR_value_sigma_DP.Rdata")
+GR_sigma_DP1<- load_object("PCA_analysis/r5/DP1_analysis/GR_value_sigma_DP1.Rdata")
+GR_sigma_PY<- load_object("PCA_analysis/r5/PY_analysis/GR_value_sigma_PY1.Rdata")
 
 
-GR_beta_DP<- load_object("PCA_analysis/r5/GR_value_beta_DP.Rdata")
-GR_beta_DP1<- load_object("PCA_analysis/r5/GR_value_beta_DP1.Rdata")
-GR_beta_DP1<- load_object("PCA_analysis/r5/GR_value_beta_PY1.Rdata")
+GR_beta_DP<- load_object("PCA_analysis/r5/DP_analysis/GR_value_beta_DP.Rdata")
+GR_beta_DP1<- load_object("PCA_analysis/r5/DP1_analysis/GR_value_beta_DP1.Rdata")
+GR_beta_DP1<- load_object("PCA_analysis/r5/PY_analysis/GR_value_beta_PY1.Rdata")
 
 ### Results
 
 
 ### Clustering: K, distances
 ### Trace chains 
-DP1_k_trace<- load_object("PCA_analysis/r5/DP1_k_chains.Rdata")
-DP_k_trace<- load_object("PCA_analysis/r5/DP_k_chains.Rdata")
-PY_k_trace<- load_object("PCA_analysis/r5/PY1_k_chains.Rdata")
+DP1_k_trace<- load_object("PCA_analysis/r5/DP1_analysis/DP1_k_chains.Rdata")
+DP_k_trace<- load_object("PCA_analysis/r5/DP_analysis/DP_k_chains.Rdata")
+PY_k_trace<- load_object("PCA_analysis/r5/PY_analysis/PY1_k_chains.Rdata")
 
 df<-cbind(DP_k_trace,DP1_k_trace[,2:3],PY_k_trace[,2:3] )
 df%>% gather(Model, trace, DP_1:PY1_2)%>%
@@ -142,9 +151,9 @@ df%>% gather(Model, trace, DP_1:PY1_2)%>%
         plot.title = element_text(size = 20)) +theme(legend.text=element_text(size=15))
 
 ### Prediction
-DP_pred<- load_object("PCA_analysis/r5/DP_prediction.Rdata")
-DP1_pred<- load_object("PCA_analysis/r5/DP1_prediction.Rdata")
-PY_pred<- load_object("PCA_analysis/r5/PY1_prediction.Rdata")
+DP_pred<- load_object("PCA_analysis/r5/DP_analysis/DP_prediction.Rdata")
+DP1_pred<- load_object("PCA_analysis/r5/DP1_analysis/DP1_prediction.Rdata")
+PY_pred<- load_object("PCA_analysis/r5/PY_analysis/PY1_prediction.Rdata")
 
 AUC_data<- tibble(DP=DP_pred$AUC_out, DP1=DP1_pred$AUC_out, PY= PY_pred$AUC_out)
 AUC_data_in<-  tibble(DP=DP_pred$AUC_in, DP1=DP1_pred$AUC_in, PY= PY_pred$AUC_in)
@@ -166,18 +175,18 @@ Pred_tab <-as.data.frame( rbind(cbind(data.frame( Measure = rbind("AUC_out")), r
  
 ##############################################################################################################
 ##  Clustering distance
-DP_clust_tab_SW <- load_object("PCA_analysis/r5/SW_tab_DP.Rdata")
-DP1_clust_tab_SW <- load_object("PCA_analysis/r5/SW_tab_DP1.Rdata")
-PY_clust_tab_SW <- load_object("PCA_analysis/r5/SW_tab_PY1.Rdata")
+DP_clust_tab_SW <- load_object("PCA_analysis/r5/DP_analysis/SW_tab_DP.Rdata")
+DP1_clust_tab_SW <- load_object("PCA_analysis/r5/DP1_analysis/SW_tab_DP1.Rdata")
+PY_clust_tab_SW <- load_object("PCA_analysis/r5/PY_analysis/SW_tab_PY1.Rdata")
 
 SW_tab<- rbind(DP_clust_tab_SW,DP1_clust_tab_SW,PY_clust_tab_SW)
 #write.csv(SW_tab, file = "SW_tab.csv")
 
 
-DP1_clust_tab_GRE <- load_object("PCA_analysis/r5/GRE_tab_DP1.Rdata")
+DP1_clust_tab_GRE <- load_object("PCA_analysis/r5/DP1_analysis/GRE_tab_DP1.Rdata")
 DP1_clust_tab_GRE$Model<- "DP1"
-DP_clust_tab_GRE <- load_object("PCA_analysis/r5/GRE_tab_DP.Rdata")
-PY_clust_tab_GRE <- load_object("PCA_analysis/r5/GRE_tab_PY1.Rdata")
+DP_clust_tab_GRE <- load_object("PCA_analysis/r5/DP_analysis/GRE_tab_DP.Rdata")
+PY_clust_tab_GRE <- load_object("PCA_analysis/r5/PY_analysis/GRE_tab_PY1.Rdata")
 
 GRE_tab<- rbind(DP1_clust_tab_GRE,DP_clust_tab_GRE,PY_clust_tab_GRE)
 #write.xlsx(GRE_tab, file = "GRE_tab.xlsx")
@@ -186,23 +195,23 @@ GRE_tab<- rbind(DP1_clust_tab_GRE,DP_clust_tab_GRE,PY_clust_tab_GRE)
 
 
 ############################################ Clusters
-load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
-load("PCA_analysis/r5/Cluster_DP1_2.Rdata")
-load("PCA_analysis/r5/Cluster_PY1_1.Rdata")
-load("PCA_analysis/r5/Cluster_PY1_2.Rdata")
-load("PCA_analysis/r5/Cluster_DP_2.Rdata")
-load("PCA_analysis/r5/Cluster_DP_1.Rdata")
+load("PCA_analysis/r5/DP1_analysis/Cluster_DP1_1.Rdata")
+load("PCA_analysis/r5/DP1_analysis/Cluster_DP1_2.Rdata")
+load("PCA_analysis/r5/PY_analysis/Cluster_PY1_1.Rdata")
+load("PCA_analysis/r5/PY_analysis/Cluster_PY1_2.Rdata")
+load("PCA_analysis/r5/DP_analysis/Cluster_DP_2.Rdata")
+load("PCA_analysis/r5/DP_analysis/Cluster_DP_1.Rdata")
 
 Clusters_all_1<- merge(Cluster_DP1_1, Cluster_DP_1, by = c("CODE_CBNA"))
 Clusters_all_1<- merge(Clusters_all_1, Cluster_PY1_1,  by = c("CODE_CBNA"))
 Clusters_all_1<- merge(Clusters_all_1, True_clust[, c("CODE_CBNA", "PFG", "K_n")], by = c("CODE_CBNA"))
-#save(Clusters_all_1, file =  paste0(folderpath,"Clusters_all_1.Rdata"))
+save(Clusters_all_1, file =  paste0("PCA_analysis/r5/Clusters/Clusters_all_1.Rdata"))
 
 
 Clusters_all_2<- merge(Cluster_DP1_2, Cluster_DP_2, by = c("CODE_CBNA"))
 Clusters_all_2<- merge(Clusters_all_2, Cluster_PY1_2,  by = c("CODE_CBNA"))
 Clusters_all_2<- merge(Clusters_all_2, True_clust[, c("CODE_CBNA", "PFG", "K_n")], by = c("CODE_CBNA"))
-#save(Clusters_all_2, file =  paste0(folderpath,"Clusters_all_2.Rdata"))
+save(Clusters_all_2, file =  paste0("PCA_analysis/r5/Clusters/Clusters_all_2.Rdata"))
 
 
 load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
@@ -212,11 +221,7 @@ Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
 M= Clusters_all_1[order(Clusters_all_1$CBN),]
 B= Clusters_all_2[order(Clusters_all_2$CBN),]
 
-arandi(All_clusters$DP1, c1)
-arandi(All_clusters$DP1, c2)
-arandi(All_clusters$PY2, c1)
-arandi(All_clusters$PY2, c2)
-
+arandi(PY1_clust2_full$VI_est[[3]], B$ClustPY1)
 
 #### Pairwise distances
 
@@ -288,3 +293,6 @@ plot(x_vec, pks)
 
 exp<-sum(x_vec*pks)
 exp
+
+
+

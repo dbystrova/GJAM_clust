@@ -75,12 +75,10 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r5/"
+folderpath="PCA_analysis/r5/DP_analysis/"
 folderpath2="PCA_analysis/r5_2/"
 folderpath3="PCA_analysis/r5_3/"
 folderpath4="PCA_analysis/r5_4/"
-folderpath5="PCA_analysis/r5_5/"
-folderpath6="PCA_analysis/r5_6/"
 
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
@@ -158,7 +156,7 @@ df_sigma<- tibble(ES=effectiveSize(mcmc(rbind(chain_1, chain_2))))
 df_sigma%>% ggplot(aes(ES, alpha = 0.3))+ geom_histogram( position="identity", alpha=0.2) 
 #summary(df_sigma)
 #min =100
-save(df_sigma, file =  paste0(folderpath,"Conv_sigma_DP.Rdata"))
+#save(df_sigma, file =  paste0(folderpath,"Conv_sigma_DP.Rdata"))
 ###### Convergence for beta coefficients
 other_values<- c("other_PC1", "other_PC2","other_I(PC1^2)","other_I(PC2^2)","other_intercept")
 chain_beta_1 <- fit_gjamDP$chains$bgibbs[(fit_gjamDP$modelList$burnin+1):fit_gjamDP$modelList$ng,1:(dim(fit_gjamDP$chains$bgibbs)[2]-5)]
