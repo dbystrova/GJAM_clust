@@ -72,7 +72,7 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r5/"
+folderpath="PCA_analysis/r5/DP1_analysis/"
 folderpath2="PCA_analysis/r5_2/"
 folderpath3="PCA_analysis/r5_3/"
 folderpath4="PCA_analysis/r5_4/"
@@ -102,6 +102,14 @@ fit_gjamDP1<- load_object(paste0(folderpath3,"fit_gjamDP1.Rdata"))
 ## Load models 2nd run
 fit_gjamDP1_2<- load_object(paste0(folderpath4,"fit_gjamDP1.Rdata"))
 
+
+
+DP1_par_list_1<- fit_gjamDP1$modelList$reductList
+DP1_par_list_2<- fit_gjamDP1_2$modelList$reductList
+DP1_pars<- list(DP1_par_list_1,DP1_par_list_2)
+save(DP1_pars, file =  paste0(folderpath,"DP1_pars.Rdata"))
+
+####
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
 new_out <- list(xdata =xdata_test,  nsim = 5000) # effort unchanged 
@@ -254,6 +262,9 @@ df_trace_DP1 %>%
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 16),
         plot.title = element_text(size = 20)) +theme(legend.text=element_text(size=15))
 
+
+
+
 ######################################### alpha chains ########################################
 ### convergence
 
@@ -302,6 +313,18 @@ aDP1 =tibble(Prior =alpha_vec,
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
 
 aDP1
+
+##### Clusters
+
+
+#DP1_pars[[1]]$otherpar$shape - DP1_pars[[2]]$otherpar$shape< 0.0001 
+#TRUE
+#DP1_pars[[1]]$otherpar$rate - DP1_pars[[2]]$otherpar$rate< 0.0001
+#TRUE
+
+
+
+
 #prior_nu1 <- fit_gjamPY2$modelList$reductList$otherpar$shape
 #prior_nu2 <- fit_gjamPY2$modelList$reductList$otherpar$rate
 #alpha_vecPY<- rgamma(18000, prior_nu1,prior_nu2)
@@ -325,6 +348,12 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 # vi_DP.ext <- minVI(CM_DP,MatDP, method="all", include.greedy = TRUE)
 # length(unique(vi_DP.ext$cl[1,]))
 # DP_grEPL<- MinimiseEPL(MatDP, pars =list("VI"))
+
+
+
+
+
+
 
 load("PCA_analysis/r5/Clusters_modells_1.Rdata")
 load("PCA_analysis/r5/Clusters_modells_2.Rdata")

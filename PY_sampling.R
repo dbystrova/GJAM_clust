@@ -528,17 +528,17 @@ exp_var_PYM<- function(alpha,sigma,H=H, n=n, Mat_prior){
 
 
 compute_alpha_PYM<- function(H,n,sigma, Mat_prior, K){
-  x<- seq(0.001,300,1)
+  x<- seq(0.001,200,0.5)
   y=sapply(x, function(x) exp_var_PYM(x, sigma=sigma,H=H, n=n,Mat_prior=Mat_prior)$E) - K
   f_spline_smooth=smooth.spline(x, y) 
   roots <- newton2(f = function(x) predict(f_spline_smooth, x,deriv = 0)$y ,f_der=  function(x) predict(f_spline_smooth, x,deriv = 1)$y,x0=1,N=50)
-  #root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
-  #print(roots)
+  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
+  print(root)
   return(roots[length(roots)])
 }
 
 
-par = compute_alpha_PYM(H=112,n=112,sigma=0.25,Mat_prior= Cnk_112_112_H025, K=16)
+par = compute_alpha_PYM(H=112,n=112,sigma=0.5,Mat_prior= Cnk_112_112_H05, K=16)
 
 x_vec<- 1:112
 pks<- sapply(x_vec, PY_prior,H=112, n=112, alpha=2.577792, sigma=0.25,Cnk_mat=Cnk_112_112_H025)
@@ -548,7 +548,7 @@ Exp
 Var<- sum(((x_vec- Exp)^2)*pks)
 #PY_prior(2,H=112, n=112, alpha=0.88, sigma=0.25,Cnk_mat=Cnk_112_112_025)
 
-
+0.4939269
 x_vec<- 1:112
 load("IJulia_part/Cnk_mat_112_H025.Rdata")
 pks<- sapply(x_vec, PY_prior,H=112, n=112, alpha=0.653293, sigma=0.25,Cnk_mat=Cnk_112_112_H025)

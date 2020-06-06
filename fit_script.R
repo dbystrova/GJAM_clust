@@ -1,5 +1,6 @@
 ## Fitting the models
 #rm(list=ls())
+#setwd("~/Documents/GitHub/GJAM_clust")
 library(repmis)
 library(gjam)
 library(MASS)

@@ -92,6 +92,11 @@ Colnames_Y<- merge(Colnames_Y,Species_names_groups_num [,c(2,3,5)], by ="CODE_CB
 Colnames_Y$species<- as.character(Colnames_Y$species)
 Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
+##### Models description
+
+##Calibration table
+
+
 
 ######################################## Convergence
 
@@ -214,28 +219,36 @@ Clusters_all_2<- merge(Clusters_all_2, True_clust[, c("CODE_CBNA", "PFG", "K_n")
 save(Clusters_all_2, file =  paste0("PCA_analysis/r5/Clusters/Clusters_all_2.Rdata"))
 
 
-load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
-Clusters_all_2$CBN <- as.numeric(Clusters_all_2$CODE_CBNA)
-Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+#Clusters_all_1_old <- load_object("PCA_analysis/r5/Clusters/Clusters_all_1_old.Rdata")
+#arandi(Clusters_all_1_old$ClustPY1, Clusters_all_1$ClustPY1)
 
-M= Clusters_all_1[order(Clusters_all_1$CBN),]
-B= Clusters_all_2[order(Clusters_all_2$CBN),]
+#Clusters_all_2_old <- load_object("PCA_analysis/r5/Clusters/Clusters_all_2_old.Rdata")
+#arandi(Clusters_all_2_old$ClustDP, Clusters_all_2$ClustDP)
 
-arandi(PY1_clust2_full$VI_est[[3]], B$ClustPY1)
+#arandi(Clusters_all_1$ClustPY1, Clusters_all_1$ClustDP1)
+
+
+#Clusters_all_2$DP <- as.numeric(Clusters_all_2$CODE_CBNA)
+#Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+
+#M= Clusters_all_1[order(Clusters_all_1$CBN),]
+#B= Clusters_all_2[order(Clusters_all_2$CBN),]
+
+#arandi(PY1_clust2_full$VI_est[[3]], B$ClustPY1)
 
 #### Pairwise distances
 
 ########### Cluster distances with random 
 load("PCA_analysis/r5/Cluster_DP1_1.Rdata")
-Clusters_all_1$CBN <- as.numeric(Clusters_all_1$CODE_CBNA)
+Clusters_all_2$CBN <- as.numeric(Clusters_all_2$CODE_CBNA)
 
-Clusters_all_1_sorted= Clusters_all_1[order(Clusters_all_1$CBN),]
+Clusters_all_2_sorted= Clusters_all_2[order(Clusters_all_2$CBN),]
 Random_cluster <-  sample(1:16, size = 111, replace = TRUE)
-Random_cluster_w <-  sample(1:16, size = 111, replace = TRUE, prob=table(Clusters_all_1_sorted$K_n)/111)
+Random_cluster_w <-  sample(1:16, size = 111, replace = TRUE, prob=table(Clusters_all_2_sorted$K_n)/111)
 
 
 M_all<- data.frame()
-Clusters_by_Rand<-cbind(Clusters_all_1_sorted, tibble(RU=Random_cluster), tibble(RW= Random_cluster_w))
+Clusters_by_Rand<-cbind(Clusters_all_2_sorted, tibble(RU=Random_cluster), tibble(RW= Random_cluster_w))
 Clusters_by_Rand_mat<- Clusters_by_Rand[,c("ClustDP1","ClustDP", "ClustPY1", "K_n", "RU", "RW")]
 Mat_dist<- matrix(NA, nrow=6, ncol=6)
 for(j in 1:6){
@@ -279,6 +292,14 @@ Clusters_all_1_sorted= Clusters_all_1[order(Clusters_all_1$CBN),]
 
 arandi(Clusters_all_1_sorted$ClustDP1, DP1_clust2_wp$VI_est)
 arandi(Clusters_all_1_sorted$ClustPY1, PY1_clust2_wp$VI_est[[1]])
+
+
+load("~/Documents/GitHub/GJAM_clust/PCA_analysis/r5/Clusters_all_2.Rdata")
+Clusters_all_2$CBN <- as.numeric(Clusters_all_2$CODE_CBNA)
+Clusters_all_2_sorted= Clusters_all_2[order(Clusters_all_2$CBN),]
+
+
+
 
 #### Anova
 

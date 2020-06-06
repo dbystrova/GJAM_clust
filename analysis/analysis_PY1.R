@@ -37,7 +37,7 @@ Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
 source("BNP_functions.R")
-source('analysis_functions.R')
+source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
   load(file = file, envir = tmp)
@@ -72,12 +72,12 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 K_prior=16
 r_reduct = 5
 
-folderpath="PCA_analysis/r5/"
+folderpath="PCA_analysis/r5/PY_analysis/"
 folderpath2="PCA_analysis/r5_2/"
 folderpath3="PCA_analysis/r5_3/"
 folderpath4="PCA_analysis/r5_4/"
-folderpath5="PCA_analysis/r5_5/"
-folderpath6="PCA_analysis/r5_6/"
+folderpath5="PCA_analysis/test/"
+folderpath6="PCA_analysis/test_2/"
 
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
@@ -98,9 +98,18 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 
 ## Load models 1st run
-fit_gjamPY1<- load_object(paste0(folderpath3,"fit_gjamPY1.Rdata"))
+fit_gjamPY1<- load_object(paste0(folderpath5,"fit_gjamPY1.Rdata"))
 ## Load models 2nd run
-fit_gjamPY1_2<- load_object(paste0(folderpath4,"fit_gjamPY1.Rdata"))
+fit_gjamPY1_2<- load_object(paste0(folderpath6,"fit_gjamPY1.Rdata"))
+
+
+
+#### Model parameters
+
+PY_par_list_1<- fit_gjamPY1$modelList$reductList
+PY_par_list_2<- fit_gjamPY1_2$modelList$reductList
+PY_pars<- list(PY_par_list_1,PY_par_list_2)
+save(PY_pars, file =  paste0(folderpath,"PY_pars.Rdata"))
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
@@ -209,9 +218,9 @@ prow <- plot_grid(
 legend_b <- get_legend(plots[[1]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
-pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
-plot(p)
-dev.off()
+#pdf(file = "Plots/PY1_Rhat_large_sigma.pdf", width= 8.27, height = 9.69)
+#plot(p)
+#dev.off()
 ###########################################################################
 
 df_sigma<- tibble(ES=effectiveSize(mcmc(rbind(chain_1, chain_2))))
@@ -252,17 +261,23 @@ for(key in names) {
 prow <- plot_grid(
   plots[[1]] + theme(legend.position='none'),
   plots[[2]]+ theme(legend.position='none'),
-  nrow = 2)
-legend_b <- get_legend(plots[[2]]+theme(legend.position ='top'))
+  plots[[3]]+ theme(legend.position='none'),
+  plots[[4]]+ theme(legend.position='none'),
+  plots[[5]]+ theme(legend.position='none'),
+  plots[[6]]+ theme(legend.position='none'),
+  plots[[7]]+ theme(legend.position='none'),
+  plots[[8]]+ theme(legend.position='none'),
+  nrow = 4)
+legend_b <- get_legend(plots[[8]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
-#pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
+pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
 plot(p)
-#dev.off()
+dev.off()
 
 df_beta<- tibble(ES= effectiveSize(mcmc(rbind(chain_beta_1, chain_beta_2))))
 df_beta %>%ggplot(aes(ES))+ geom_histogram( position="identity", alpha=0.5) 
-save(df_beta, file =  paste0(folderpath,"Conv_beta_PY1.Rdata"))
+#save(df_beta, file =  paste0(folderpath,"Conv_beta_PY1.Rdata"))
 
 ###########################################################################################################
 ############################Trace plot##########################################################################
@@ -307,13 +322,13 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 # arandi(DP_grEPL$decision, Cluster_models_2$ClustPY1)
 # arandi(vi_DP.ext$cl[1,], Cluster_models_2$ClustPY1)
 
-#PY1_clust<- gjamClust_full_test(model= fit_PY_comb)
-#save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
+PY1_clust<- gjamClust_full_test(model= fit_PY_comb)
+save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
 PY1_clust<- gjamClust(model= fit_PY_comb)
 
 PY1_clust_1<- gjamClust(model= fit_gjamPY1)
-#PY1_clust_2<- gjamClust(model= fit_gjamPY1_2)
-#arandi(PY1_clust_1$VI_est,PY1_clust_2$VI_est)
+PY1_clust_2<- gjamClust(model= fit_gjamPY1_2)
+arandi(PY1_clust_1$VI_est,PY1_clust_2$VI_est)
 
 #arandi(PY1_clust_2$VI_est,Cluster_models_2$ClustPY1)
 #### Compare the obtained estimates with the PFG clusters
@@ -327,23 +342,68 @@ Cluster_PY1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY
 ###########################
 
 PY1_clust2_full<- gjamClust2_full(model= fit_PY_comb)
-#save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
+save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
 
-#PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
-#PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
+PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
+PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
 arandi(PY1_clust2_1$VI_est,PY1_clust2_2$VI_est)
-arandi(PY1_clust2_2$VI_est, Cluster_models_1$ClustPY1)
-arandi(PY1_clust2_2$VI_est, Cluster_models_2$ClustPY1)
-arandi(PY1_clust2_full$VI_est[[3]], Clusters_all_2_sorted$ClustDP1)
+arandi(PY1_clust2_1$VI_est, Clusters_all_2_sorted$ClustPY1)
+arandi(PY1_clust2_full$VI_est[[3]],Clusters_all_2_sorted$ClustPY1)
+arandi(PY1_clust2$VI_est,Clusters_all_2_sorted$ClustPY1)
+arandi(PY1_clust2_full$VI_est[[3]],PY1_clust2$VI_est)
+arandi(PY1_clust2$VI_est,Clusters_all_2_sorted$ClustPY1)
 
 ### using true clust initialization
-PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init= True_clust$K_n, loss_type="VI"))
+PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init=  True_clust$K_n, loss_type="VI"))
+#PY1_clust2$VI_est <- PY1_clust2_full$VI_est[[3]]
+#PY1_clust2$EPL_value<- PY1_clust2_full$EPL_value[[3]]
 #save(PY1_clust2, file =  paste0(folderpath,"Clustering__PY1_v1.Rdata"))
 
 GRE_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust2$VI_est)),VI_dist = vi.dist(PY1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust2$VI_est, True_clust$K_n))
-#save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
-#Cluster_PY1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust2$VI_est)
-#save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
+save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
+Cluster_PY1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust2$VI_est)
+save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
+
+##### Prior/Posterior clusters
+
+PY_prior<- function(k,H, n, alpha, sigma, Cnk_mat){
+  n_vec<- 0:(n-2)
+  fal_fact <- prod(alpha +1 +n_vec)
+  coef = exp(log(factorial(H)) -  log(factorial(H - k)) - log(fal_fact))
+  sum<- 0
+  for (l in (k:n)){
+    if (k==l){
+      val0 = exp( lgamma(alpha/sigma +l ) - lgamma(alpha/sigma + 1) - l*log(H)  + Cnk_mat[n,l])
+    }
+    else{
+      val0 = exp( lgamma(alpha/sigma +l ) - lgamma(alpha/sigma + 1) - l*log(H) + Strlng2(l, k, log = TRUE) + Cnk_mat[n,l])
+    }
+    sum<- sum + val0
+  }
+  return( (coef*sum)/sigma)
+}
+
+#PY_pars[[1]]$Precomp_mat
+load("IJulia_part/Cnk_mat_112_H05.Rdata")
+library(CryptRndTest)
+
+x_vec<- 1:112
+#PY_prior(1,PY_pars[[1]]$N,PY_pars[[1]]$N,  PY_pars[[1]]$alpha_py, PY_pars[[1]]$sigma_py, Cnk_112_112_H05)
+pks<- sapply(x_vec,PY_prior,PY_pars[[2]]$N,PY_pars[[2]]$N,  PY_pars[[2]]$alpha_py, PY_pars[[1]]$sigma_py, Cnk_112_112_H05)
+plot(x_vec, pks)
+exp<-sum(x_vec*pks)
+exp
+
+pks<- sapply(x_vec,PY_prior,PY_pars[[1]]$N,PY_pars[[1]]$N,  PY_pars[[1]]$alpha_py, PY_pars[[1]]$sigma_py, Cnk_112_112_H05)
+plot(x_vec, pks)
+exp<-sum(x_vec*pks)
+exp
+
+#pks<- sapply(x_vec,PY_prior,112,112, 0.4787335,0.5, Cnk_112_112_H05)
+#plot(x_vec, pks)
+#exp<-sum(x_vec*pks)
+#exp
+
 
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
@@ -370,11 +430,6 @@ corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = 
 corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
          method = "color",col=cols(200), type = "full",title= "Correlation for the PY model (PY groups)", mar=c(0,0,1,0))
 #dev.off()
-
-
-
-
-
 
 
 

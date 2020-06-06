@@ -199,12 +199,12 @@ exp_var_PYM<- function(alpha,sigma,H=H, n=n, Mat_prior){
 
 
 compute_alpha_PYM<- function(H,n,sigma, Mat_prior, K){
-  x<- seq(0.001,300,1)
+  x<- seq(0.001,200,0.5)
   y=sapply(x, function(x) exp_var_PYM(x, sigma=sigma,H=H, n=n,Mat_prior=Mat_prior)$E) - K
   f_spline_smooth=smooth.spline(x, y) 
   roots <- newton2(f = function(x) predict(f_spline_smooth, x,deriv = 0)$y ,f_der=  function(x) predict(f_spline_smooth, x,deriv = 1)$y,x0=1,N=50)
-  #root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
-  #print(roots)
+  root<-  uniroot(function(x) predict(f_spline_smooth, x, deriv = 0)$y - 0, interval = c(0, 100))$root
+  print(root)
   return(roots[length(roots)])
 }
 
