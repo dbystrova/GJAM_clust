@@ -12,7 +12,7 @@ Reproduce the analysis results
 To reproduce the analysis results, there are two possibilites:
 
 1.  Run the fit\_script.R, which will run and save the models in the folder "PCA analysis". This option could be time consuming
-2.  Download saved models from the following link [models](https://drive.google.com/open?id=1sRu7Q7rJ4aIYp-YCKOa_igA5Ofzc7tRH) and load the models in the folder "PCA analysis/r5\_25" on your local repository
+2.  Download saved models from the following link [models](https://drive.google.com/open?id=1sRu7Q7rJ4aIYp-YCKOa_igA5Ofzc7tRH) and load the models in the folder "PCA analysis/r5" on your local repository
 
 The analysis results could be reproduced by the "analysis.R" script.
 **to run specifc functions for now use firstly script inlclude.R**
