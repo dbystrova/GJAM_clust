@@ -1,6 +1,7 @@
 ## Fitting the models
 #rm(list=ls())
 #setwd("~/Documents/GitHub/GJAM_clust")
+library(stringr)
 library(repmis)
 library(gjam)
 library(MASS)
@@ -37,7 +38,7 @@ Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
 source("BNP_functions.R")
-source('analysis_functions.R')
+source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
   load(file = file, envir = tmp)
@@ -94,7 +95,10 @@ True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
 
 Colnames_Y<- merge(Colnames_Y,Species_names_groups_num [,c(2,3,5)], by ="CODE_CBNA" )
 Colnames_Y$species<- as.character(Colnames_Y$species)
-Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
+
+#Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
+Colnames_Y$species <- ifelse(is.na(word(Colnames_Y$species, 1, 2)), Colnames_Y$species, word(Colnames_Y$species, 1, 2))
+
 
 
 ## Load models 1st run
@@ -107,7 +111,7 @@ fit_gjamDP1_2<- load_object(paste0(folderpath4,"fit_gjamDP1.Rdata"))
 DP1_par_list_1<- fit_gjamDP1$modelList$reductList
 DP1_par_list_2<- fit_gjamDP1_2$modelList$reductList
 DP1_pars<- list(DP1_par_list_1,DP1_par_list_2)
-save(DP1_pars, file =  paste0(folderpath,"DP1_pars.Rdata"))
+#save(DP1_pars, file =  paste0(folderpath,"DP1_pars.Rdata"))
 
 ####
 ########################################Prediction########################################################
@@ -253,6 +257,7 @@ df_trace_DP1<- tibble(it= 1: length(apply(fit_gjamDP1$chains$kgibbs,1,function(x
                       DP1_2 = trace_chain_2)
 #save(df_trace_DP1, file =  paste0(folderpath,"DP1_k_chains.Rdata"))
 
+
 df_trace_DP1 %>%
   gather(Chains, trace, DP1:DP1_2)%>%
   ggplot(aes(x=it,y=trace,col=Chains))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
@@ -305,18 +310,27 @@ mean(x)
 
 ###Posterior for alpha parameter DP2
 
-aDP1 =tibble(Prior =alpha_vec,
+#pdf(file = "Plots/DP1_alpha_posterior_K16.pdf", width=3.5, height =4.5)
+aDP16 =tibble(Prior =alpha_vec,
              Posterior =c(alpha_ch_1,alpha_ch_2))%>%
   gather(Distribution, density, Prior:Posterior)%>%
-  ggplot(aes(x=density, fill=Distribution)) +scale_color_viridis()+
-  geom_density(adjust = 1, alpha=0.6)+ggtitle(TeX(sprintf('Prior and posterior distribution for DP1 $\\alpha$'))) + xlab("")+
-  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+  ggplot(aes(x=density, fill=Distribution)) +
+  scale_color_viridis()+
+  geom_density(adjust = 2, alpha=0.5)+
+  #ggtitle(TeX(sprintf('Prior and posterior distribution for DP1 $\\alpha$'))) +
+  #xlab("")+
+  xlab(TeX(sprintf('$\\alpha$')))+
+  ylab("")+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "none", plot.title = element_text(hjust = 0.5))
+#aDP16
+plot(aDP16)
+#dev.off()
 
-aDP1
 
 ##### Clusters
-
-
+aDP16 =tibble(Prior =alpha_vec,Posterior =c(alpha_ch_1,alpha_ch_2))%>%gather(Distribution, Probability, Prior:Posterior)
+aDP16$K_pr<- "K = 16"
+#save(aDP16, file="aDP16.Rdata")
 #DP1_pars[[1]]$otherpar$shape - DP1_pars[[2]]$otherpar$shape< 0.0001 
 #TRUE
 #DP1_pars[[1]]$otherpar$rate - DP1_pars[[2]]$otherpar$rate< 0.0001
@@ -325,17 +339,17 @@ aDP1
 
 
 
-#prior_nu1 <- fit_gjamPY2$modelList$reductList$otherpar$shape
-#prior_nu2 <- fit_gjamPY2$modelList$reductList$otherpar$rate
-#alpha_vecPY<- rgamma(18000, prior_nu1,prior_nu2)
-#x<- sapply(alpha_vecPY, functionPY,n=112, sigma_py=0.25)
-#mean(x)
-
-
 #pdf(file = "Plots/Posterior_for_DP1_parameters.pdf", width= 8.27, height = 9.69)
-plot(aDP1)
+#plot(aDP16)
 #dev.off()
+K_chain <- apply(fit_DP1_comb$chains$kgibbs[(fit_DP1_comb$modelList$burnin +1):fit_DP1_comb$modelList$ng,],1,function(x) length(unique(x)))
 
+prob_clustDP1<-vector("numeric", length = 112)
+p_ks <-table(K_chain)
+prob_clustDP1[as.numeric(c(names(p_ks)))]<- p_ks/sum(p_ks)
+prob_clustDP1[-as.numeric(c(names(p_ks)))]<- 0
+plot(1:112,prob_clustDP1, col="red", type="l")
+#save(prob_clustDP1, file="DP1_post_clust16.Rdata")
 
 ##################################Clustering #####################################
 sp_num<- ncol(Ydata)-1
@@ -355,8 +369,8 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 
 
 
-load("PCA_analysis/r5/Clusters_modells_1.Rdata")
-load("PCA_analysis/r5/Clusters_modells_2.Rdata")
+load("PCA_analysis/r5/Clusters/Clusters_all_1.Rdata")
+load("PCA_analysis/r5/Clusters/Clusters_all_2.Rdata")
 # 
 # DP_grEPL$decision
 # arandi(DP_grEPL$decision, Cluster_models_1$ClustPY1)
@@ -379,9 +393,9 @@ arandi(DP1_clust_2$VI_est,DP1_clust$VI_est)
 
 SW_fin_table_DP1<-tibble(Model="DP1",K=length(unique(DP1_clust$VI_est)),VI_dist = vi.dist(DP1_clust$VI_est, True_clust$K_n), AR_dist = arandi(DP1_clust$VI_est, True_clust$K_n))
 #save(SW_fin_table_DP1, file =  paste0(folderpath,"SW_tab_DP1.Rdata"))
-Cluster_DP1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP1=DP1_clust$VI_est)
+#Cluster_DP1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP1=DP1_clust$VI_est)
 #save(Cluster_DP1_1, file =  paste0(folderpath,"Cluster_DP1_1.Rdata"))
-
+Cluster_DP1_1 <- load_object(paste0(folderpath,"Cluster_DP1_1.Rdata"))
 ## Second clustering method
 ###########################
 
@@ -403,31 +417,65 @@ GRE_fin_table_DP1<-tibble(Model="DP1",K=length(unique(DP1_clust2$VI_est)),VI_dis
 #save(GRE_fin_table_DP1, file =  paste0(folderpath,"GRE_tab_DP1.Rdata"))
 Cluster_DP1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP1=DP1_clust2$VI_est)
 #save(Cluster_DP1_2, file =  paste0(folderpath,"Cluster_DP1_2.Rdata"))
+Cluster_DP1_2 <- load_object(paste0(folderpath,"Cluster_DP1_2.Rdata"))
+arandi(Cluster_DP1_2$ClustDP1, Clusters_all_2_sorted$ClustDP1)
+###### Check with sorted
+Clusters_all_2$CBN <- as.numeric(Clusters_all_2$CODE_CBNA)
+Clusters_all_2_sorted= Clusters_all_2[order(Clusters_all_2$CBN),]
+
+
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
 Colnames_Y_clust<- merge(Colnames_Y, Cluster_DP1_2, by ="CODE_CBNA")
 
-### Covariance matrix for the mean 
-#pdf(file = "Plots/Correlation_matrix_DP1.pdf", width= 8.27, height = 9.69)
-MDP= (fit_gjamDP1$parameters$corMu + fit_gjamDP1_2$parameters$corMu)/2
-Colnames_Y_clust$Sp_name_DP1 <- paste(Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep="_")
-rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
-colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP1))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP1),"ClustDP1"],length(unique(Colnames_Y_clust$ClustDP1))+1), function(x) colors_vir[x])
-cols = colorRampPalette(c("dark blue","white","red"))
-col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
-                           "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
-                           "#67001F", "#B2182B", "#D6604D", "#F4A582"))
+# ### Covariance matrix for the mean 
+# pdf(file = "Plots/Correlation_matrix_DP1.pdf", width= 8.27, height = 9.69)
+# MDP= (fit_gjamDP1$parameters$corMu + fit_gjamDP1_2$parameters$corMu)/2
+# Colnames_Y_clust$Sp_name_DP1 <- paste("Group",Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep=":")
+# rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
+# colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"],"other")
+# colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP1))+1, option = "magma")
+# LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP1),"ClustDP1"],length(unique(Colnames_Y_clust$ClustDP1))+1), function(x) colors_vir[x])
+# cols = colorRampPalette(c("dark blue","white","red"))
+# col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
+#                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
+#                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
+# 
+# 
+# #corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
+# #         type = "full", title= "Correlation for the DP1 model (original)", mar=c(0,0,1,0))
+# 
+# corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+#          method = "color",col=cols(200), type = "lower",title= "Residual correlation matrix for DPc model", mar=c(0,0,1,0))
+# dev.off()
 
+ ### Covariance matrix for the mean 
+ pdf(file = "Plots/Correlation_matrix_DP1.pdf", width= 8.27, height = 9.69)
+ MDP= (fit_gjamDP1$parameters$corMu + fit_gjamDP1_2$parameters$corMu)/2
+ cor_matrix_DP1 = MDP[1:111,1:111]
+ for (i in 1:111){
+   if (Colnames_Y_clust$ClustDP1[i] > 9){
+     Colnames_Y_clust$Sp_name_DP1[i] <- paste("Group",Colnames_Y_clust$ClustDP1[i], Colnames_Y_clust$species[i],sep=":")
+   }
+   else{
+     Colnames_Y_clust$Sp_name_DP1[i] <- paste(" Group",Colnames_Y_clust$ClustDP1[i], Colnames_Y_clust$species[i],sep=":")
+   }
+ }
+ #Colnames_Y_clust$Sp_name_DP1 <- paste("Group",Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep=":")
+ rownames(cor_matrix_DP1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"])
+ colnames(cor_matrix_DP1)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP1"])
+ colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP1))+1, option = "magma")
+ LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP1),"ClustDP1"],length(unique(Colnames_Y_clust$ClustDP1))), function(x) colors_vir[x])
+ cols = colorRampPalette(c("dark blue","white","red"))
+ col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
+                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
+                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
+ 
+ 
+corrplot(cor_matrix_DP1, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+          method = "color",col=cols(200), type = "lower",title= " ", mar=c(0,0,1,0))
 
-corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
-         type = "full", title= "Correlation for the DP1 model (original)", mar=c(0,0,1,0))
-
-corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
-         method = "color",col=cols(200), type = "full",title= "Correlation for the DP1 model (DP1 groups)", mar=c(0,0,1,0))
-#dev.off()
-
+dev.off()
 
 
 ######## Precision matrix ################################################################################

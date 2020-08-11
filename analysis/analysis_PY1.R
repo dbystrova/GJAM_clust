@@ -94,7 +94,8 @@ True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
 
 Colnames_Y<- merge(Colnames_Y,Species_names_groups_num [,c(2,3,5)], by ="CODE_CBNA" )
 Colnames_Y$species<- as.character(Colnames_Y$species)
-Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
+#Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
+Colnames_Y$species <- ifelse(is.na(word(Colnames_Y$species, 1, 2)), Colnames_Y$species, word(Colnames_Y$species, 1, 2))
 
 
 ## Load models 1st run
@@ -109,7 +110,7 @@ fit_gjamPY1_2<- load_object(paste0(folderpath6,"fit_gjamPY1.Rdata"))
 PY_par_list_1<- fit_gjamPY1$modelList$reductList
 PY_par_list_2<- fit_gjamPY1_2$modelList$reductList
 PY_pars<- list(PY_par_list_1,PY_par_list_2)
-save(PY_pars, file =  paste0(folderpath,"PY_pars.Rdata"))
+#save(PY_pars, file =  paste0(folderpath,"PY_pars.Rdata"))
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest
@@ -271,9 +272,9 @@ prow <- plot_grid(
 legend_b <- get_legend(plots[[8]]+theme(legend.position ='top'))
 p <- plot_grid(prow, ncol = 1,rel_heights = c(10, 1))
 
-pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
-plot(p)
-dev.off()
+#pdf(file = "Plots/PY1_Rhat_large_beta.pdf", width= 8.27, height = 9.69)
+#plot(p)
+#dev.off()
 
 df_beta<- tibble(ES= effectiveSize(mcmc(rbind(chain_beta_1, chain_beta_2))))
 df_beta %>%ggplot(aes(ES))+ geom_histogram( position="identity", alpha=0.5) 
@@ -289,7 +290,7 @@ trace_chain_2 = apply(fit_gjamPY1_2$chains$kgibbs,1,function(x) length(unique(x)
 df_trace_PY1<- tibble(it= 1: length(apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))),
                        PY1=trace_chain_1,
                        PY1_2 = trace_chain_2)
-save(df_trace_PY1, file =  paste0(folderpath,"PY1_k_chains.Rdata"))
+#save(df_trace_PY1, file =  paste0(folderpath,"PY1_k_chains.Rdata"))
 
 df_trace_PY1 %>%
   gather(Chains, trace, PY1:PY1_2)%>%
@@ -323,7 +324,7 @@ K_chain = rbind(K_chain_1,K_chain_2 )
 # arandi(vi_DP.ext$cl[1,], Cluster_models_2$ClustPY1)
 
 PY1_clust<- gjamClust_full_test(model= fit_PY_comb)
-save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
+#save(PY1_clust, file =  paste0(folderpath,"Clustering_mcclust_diff_sp_PY1.Rdata"))
 PY1_clust<- gjamClust(model= fit_PY_comb)
 
 PY1_clust_1<- gjamClust(model= fit_gjamPY1)
@@ -342,7 +343,7 @@ Cluster_PY1_1<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY
 ###########################
 
 PY1_clust2_full<- gjamClust2_full(model= fit_PY_comb)
-save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
+#save(PY1_clust2_full, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY1.Rdata"))
 
 PY1_clust2_1<- gjamClust2(model= fit_gjamPY1)
 PY1_clust2_2<- gjamClust2(model= fit_gjamPY1_2)
@@ -358,11 +359,14 @@ PY1_clust2 <- gjamClust2(model= fit_PY_comb,  pars =list(decision_init=  True_cl
 #PY1_clust2$VI_est <- PY1_clust2_full$VI_est[[3]]
 #PY1_clust2$EPL_value<- PY1_clust2_full$EPL_value[[3]]
 #save(PY1_clust2, file =  paste0(folderpath,"Clustering__PY1_v1.Rdata"))
+PY1_clust2<- load_object( paste0(folderpath,"Clustering__PY1_v1.Rdata"))
 
 GRE_fin_table_PY1<-tibble(Model="PY1",K=length(unique(PY1_clust2$VI_est)),VI_dist = vi.dist(PY1_clust2$VI_est, True_clust$K_n), AR_dist = arandi(PY1_clust2$VI_est, True_clust$K_n))
 save(GRE_fin_table_PY1, file =  paste0(folderpath,"GRE_tab_PY1.Rdata"))
 Cluster_PY1_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustPY1=PY1_clust2$VI_est)
-save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
+
+Cluster_PY1_2 <- load_object( paste0(folderpath,"Cluster_PY1_2.Rdata")) 
+#save(Cluster_PY1_2, file =  paste0(folderpath,"Cluster_PY1_2.Rdata"))
 
 ##### Prior/Posterior clusters
 
@@ -385,6 +389,8 @@ PY_prior<- function(k,H, n, alpha, sigma, Cnk_mat){
 
 #PY_pars[[1]]$Precomp_mat
 load("IJulia_part/Cnk_mat_112_H05.Rdata")
+load("IJulia_part/Cnk_mat_112_H025.Rdata")
+
 library(CryptRndTest)
 
 x_vec<- 1:112
@@ -398,38 +404,86 @@ pks<- sapply(x_vec,PY_prior,PY_pars[[1]]$N,PY_pars[[1]]$N,  PY_pars[[1]]$alpha_p
 plot(x_vec, pks)
 exp<-sum(x_vec*pks)
 exp
+# 
+# x_vec<- 1:112
+# pks<- sapply(x_vec,PY_prior,112,112, 0.6426103,0.25, Cnk_112_112_H025)
+# plot(x_vec, pks)
+# exp<-sum(x_vec*pks)
+# exp
 
-#pks<- sapply(x_vec,PY_prior,112,112, 0.4787335,0.5, Cnk_112_112_H05)
-#plot(x_vec, pks)
-#exp<-sum(x_vec*pks)
-#exp
+sp_num<- ncol(Ydata)-1
+K_chain_1 <- fit_gjamPY1$chains$kgibbs[(fit_gjamPY1$modelList$burnin +1):fit_gjamPY1$modelList$ng,]
+K_chain_2 <- fit_gjamPY1_2$chains$kgibbs[(fit_gjamPY1_2$modelList$burnin +1):fit_gjamPY1_2$modelList$ng,]
+K_chain = rbind(K_chain_1,K_chain_2 )
+
+
+prob_clust_PY_16<-vector("numeric", length = 112)
+p_ks <-table(apply(K_chain,1,function(x) length(unique(x))))
+prob_clust_PY_16[as.numeric(c(names(p_ks)))]<- p_ks/sum(p_ks)
+prob_clust_PY_16[-as.numeric(c(names(p_ks)))]<- 0
+plot(1:112,prob_clust_PY_16, col="red", type="l")
+save(prob_clust_PY_16, file="PY_post_clust16.Rdata")
+
+
+
 
 
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
 Colnames_Y_clust<- merge(Colnames_Y, Cluster_PY1_2, by ="CODE_CBNA")
+# 
+# ### Covariance matrix for the mean 
+# #pdf(file = "Plots/Correlation_matrix_PY.pdf", width= 8.27, height = 9.69)
+# MDP= (fit_gjamPY1$parameters$corMu + fit_gjamPY1_2$parameters$corMu)/2
+# Colnames_Y_clust$Sp_name_PY <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
+# rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
+# colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
+# colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY1))+1, option = "magma")
+# LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY),"ClustPY1"],length(unique(Colnames_Y_clust$ClustPY1))+1), function(x) colors_vir[x])
+# cols = colorRampPalette(c("dark blue","white","red"))
+# col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
+#                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
+#                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
+# 
+# 
+# 
+# corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
+#          type = "full", title= "Correlation for the PY model (original)", mar=c(0,0,1,0))
+# 
+# corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+#          method = "color",col=cols(200), type = "full",title= "Correlation for the PY model (PY groups)", mar=c(0,0,1,0))
+# #dev.off()
+# 
 
-### Covariance matrix for the mean 
-#pdf(file = "Plots/Correlation_matrix_PY.pdf", width= 8.27, height = 9.69)
+
+
+pdf(file = "Plots/Correlation_matrix_PY.pdf", width= 8.27, height = 9.69)
 MDP= (fit_gjamPY1$parameters$corMu + fit_gjamPY1_2$parameters$corMu)/2
-Colnames_Y_clust$Sp_name_PY <- paste(Colnames_Y_clust$ClustPY1, Colnames_Y_clust$species,sep="_")
-rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
-colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY1))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY),"ClustPY1"],length(unique(Colnames_Y_clust$ClustPY1))+1), function(x) colors_vir[x])
+cor_matrix_PY = MDP[1:111,1:111]
+for (i in 1:111){
+  if (Colnames_Y_clust$ClustPY1[i] > 9){
+    Colnames_Y_clust$Sp_name_PY[i] <- paste("Group",Colnames_Y_clust$ClustPY1[i], Colnames_Y_clust$species[i],sep=":")
+  }
+  else{
+    Colnames_Y_clust$Sp_name_PY[i] <- paste(" Group",Colnames_Y_clust$ClustPY1[i], Colnames_Y_clust$species[i],sep=":")
+  }
+}
+#Colnames_Y_clust$Sp_name_DP1 <- paste("Group",Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep=":")
+rownames(cor_matrix_PY)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"])
+colnames(cor_matrix_PY)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_PY"])
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustPY1)), option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_PY),"ClustPY1"],length(unique(Colnames_Y_clust$ClustPY1))), function(x) colors_vir[x])
 cols = colorRampPalette(c("dark blue","white","red"))
 col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
 
 
+corrplot(cor_matrix_PY, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+         method = "color",col=cols(200), type = "lower",title= "", mar=c(0,0,1,0))
 
-corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
-         type = "full", title= "Correlation for the PY model (original)", mar=c(0,0,1,0))
+dev.off()
 
-corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
-         method = "color",col=cols(200), type = "full",title= "Correlation for the PY model (PY groups)", mar=c(0,0,1,0))
-#dev.off()
 
 
 

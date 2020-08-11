@@ -37,7 +37,7 @@ Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
 source("BNP_functions.R")
-source('analysis_functions.R')
+source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
   load(file = file, envir = tmp)
@@ -253,6 +253,20 @@ GRE_fin_table_DP<-tibble(Model="DP",K=length(unique(DP_clust2$VI_est)),VI_dist =
 #save(GRE_fin_table_DP, file =  paste0(folderpath,"GRE_tab_DP.Rdata"))
 Cluster_DP_2<- tibble( CODE_CBNA=colnames(Ydata)[1:(ncol(Ydata)-1)],ClustDP=DP_clust2$VI_est)
 #save(Cluster_DP_2, file =  paste0(folderpath,"Cluster_DP_2.Rdata"))
+Cluster_DP_2<- load_object( paste0(folderpath,"Cluster_DP_2.Rdata"))
+
+
+K_chain <- apply(fit_DP_comb$chains$kgibbs[(fit_DP_comb$modelList$burnin +1):fit_DP_comb$modelList$ng,],1,function(x) length(unique(x)))
+
+prob_clustDP<-vector("numeric", length = 112)
+p_ks <-table(K_chain)
+prob_clustDP[as.numeric(c(names(p_ks)))]<- p_ks/sum(p_ks)
+prob_clustDP[-as.numeric(c(names(p_ks)))]<- 0
+plot(1:112,prob_clustDP, col="red", type="l")
+#save(prob_clustDP, file="DP_post_clust.Rdata")
+
+
+
 
 ##################################Covariance matrix######################################################################
 #### Add cluster labels 
@@ -260,28 +274,54 @@ Colnames_Y_clust<- merge(Colnames_Y, Cluster_DP_2, by ="CODE_CBNA")
 
 ### Covariance matrix for the mean 
 #pdf(file = "Plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
+# MDP= (fit_gjamDP$parameters$corMu + fit_gjamDP_2$parameters$corMu)/2
+# Colnames_Y_clust$Sp_name_DP <- paste(Colnames_Y_clust$ClustDP, Colnames_Y_clust$species,sep="_")
+# rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
+# colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
+# colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP))+1, option = "magma")
+# LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP),"ClustDP"],length(unique(Colnames_Y_clust$ClustDP))+1), function(x) colors_vir[x])
+# cols = colorRampPalette(c("dark blue","white","red"))
+# col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
+#                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
+#                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
+# 
+# 
+# 
+# corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
+#          type = "full", title= "Correlation for the DP model (original)", mar=c(0,0,1,0))
+# 
+# corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+#          method = "color",col=cols(200), type = "full",title= "Correlation for the DP model (DP groups)", mar=c(0,0,1,0))
+# 
+# #dev.off()
+
+
+pdf(file = "Plots/Correlation_matrix_DP.pdf", width= 8.27, height = 9.69)
 MDP= (fit_gjamDP$parameters$corMu + fit_gjamDP_2$parameters$corMu)/2
-Colnames_Y_clust$Sp_name_DP <- paste(Colnames_Y_clust$ClustDP, Colnames_Y_clust$species,sep="_")
-rownames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
-colnames(MDP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"],"other")
-colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP))+1, option = "magma")
-LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP),"ClustDP"],length(unique(Colnames_Y_clust$ClustDP))+1), function(x) colors_vir[x])
+cor_matrix_DP = MDP[1:111,1:111]
+for (i in 1:111){
+  if (Colnames_Y_clust$ClustDP[i] > 9){
+    Colnames_Y_clust$Sp_name_DP[i] <- paste("Group",Colnames_Y_clust$ClustDP[i], Colnames_Y_clust$species[i],sep=":")
+  }
+  else{
+    Colnames_Y_clust$Sp_name_DP[i] <- paste(" Group",Colnames_Y_clust$ClustDP[i], Colnames_Y_clust$species[i],sep=":")
+  }
+}
+#Colnames_Y_clust$Sp_name_DP1 <- paste("Group",Colnames_Y_clust$ClustDP1, Colnames_Y_clust$species,sep=":")
+rownames(cor_matrix_DP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"])
+colnames(cor_matrix_DP)=c(Colnames_Y_clust[order(Colnames_Y_clust$CN),"Sp_name_DP"])
+colors_vir=viridis(length(unique(Colnames_Y_clust$ClustDP)), option = "magma")
+LabelCol = sapply(c(Colnames_Y_clust[order(Colnames_Y_clust$Sp_name_DP),"ClustDP"],length(unique(Colnames_Y_clust$ClustDP))), function(x) colors_vir[x])
 cols = colorRampPalette(c("dark blue","white","red"))
 col2 <- colorRampPalette(c("#4393C3", "#2166AC", "#053061",
                            "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE",
                            "#67001F", "#B2182B", "#D6604D", "#F4A582"))
 
 
+corrplot(cor_matrix_DP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
+         method = "color",col=cols(200), type = "lower",title= "", mar=c(0,0,1,0))
 
-corrplot(MDP, diag = FALSE, order = "hclust", tl.cex = 0.45,tl.srt=45, method = "color", tl.col=LabelCol,col=cols(200),
-         type = "full", title= "Correlation for the DP model (original)", mar=c(0,0,1,0))
-
-corrplot(MDP, diag = FALSE, order = "alphabet", tl.cex = 0.45,tl.srt=45,  tl.col=LabelCol,
-         method = "color",col=cols(200), type = "full",title= "Correlation for the DP model (DP groups)", mar=c(0,0,1,0))
-
-#dev.off()
-
-
+dev.off()
 
 ######## Precision matrix ################################################################################
 library(qgraph)
