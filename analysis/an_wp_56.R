@@ -36,7 +36,7 @@ library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
-source("BNP_functions.R")
+source("R/BNP_functions.R")
 source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
@@ -65,8 +65,8 @@ p_w<- S_prev[1:(length(S_prev))]/sum(S_prev[1:(length(S_prev))])
 Colnames_Y<- tibble(CN = 1:112, CODE_CBNA=colnames(Ydata))
 formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
-folderpath="PCA_analysis/r5/PY_analysis/"
-folderpath_wp="PCA_analysis/r_wp/"
+folderpath="PCA_analysis/r_wp/wp_56/"
+folderpath_mod="PCA_analysis/r_wp/wp_56/models/chain_1/"
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
 Species_names_groups<- read.csv("Bauges/PFG_Bauges_Description_2017.csv", sep="\t")
@@ -83,9 +83,9 @@ Colnames_Y$species<- as.character(Colnames_Y$species)
 Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 ## Load models 1st run
-fit_gjamDP1<- load_object(paste0(folderpath_wp,"fit_gjamDP1.Rdata"))
+fit_gjamDP1<- load_object(paste0(folderpath_mod,"fit_gjamDP1.Rdata"))
 ## Load models 2nd run
-fit_gjamPY1<- load_object(paste0(folderpath_wp,"fit_gjamPY1.Rdata"))
+fit_gjamPY1<- load_object(paste0(folderpath_mod,"fit_gjamPY1.Rdata"))
 #Parameters
 Pars_wp_56<- list(DP1 = fit_gjamDP1$modelList$reductList, PY=  fit_gjamPY1$modelList$reductList)
 ### Check the prior
@@ -137,10 +137,10 @@ PY_prior<- function(k,H, n, alpha, sigma, Cnk_mat){
 }
 
 #PY_pars[[1]]$Precomp_mat
-load("IJulia_part/Cnk_mat_112_H05.Rdata")
-load("IJulia_part/Cnk_mat_112_H025.Rdata")
-load("IJulia_part/Cnk_mat_112_H025.Rdata")
-load("IJulia_part/Cnk_mat_112_H08.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H05.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H025.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H025.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H08.Rdata")
 library(CryptRndTest)
 
 x_vec<- 1:112
@@ -149,7 +149,7 @@ plot(x_vec, pks)
 exp<-sum(x_vec*pks)
 exp
 
-gjam<- load_object("PCA_analysis/r5_3/fit_gjam.Rdata")
+gjam<- load_object("PCA_analysis/r5_models/chain_1/fit_gjam.Rdata")
 
 trace_chain_DP1 = apply(fit_gjamDP1$chains$kgibbs,1,function(x) length(unique(x)))
 trace_chain_PY = apply(fit_gjamPY1$chains$kgibbs,1,function(x) length(unique(x)))
@@ -162,7 +162,6 @@ df_trace_wp_56<- tibble(it= 1: length(apply(fit_gjamPY1$chains$kgibbs,1,function
 #save(df_trace_wp_56, file =  paste0(folderpath,"df_trace_wp_56.Rdata"))
 
 #pdf(file = "Plots/Kn_posterior_trace_56.pdf", width= 8.27, height = 9.69)
-
 df_trace_wp_56 %>%
   gather(Chains, trace, DP1:DP)%>%
   ggplot(aes(x=it,y=trace,col=Chains))+geom_line(alpha=0.7)+ scale_color_viridis(discrete=TRUE)+
@@ -171,15 +170,9 @@ df_trace_wp_56 %>%
   theme(axis.text.x = element_text(size = 14), axis.title.x = element_text(size = 16),
         axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 16),
         plot.title = element_text(size = 20)) +theme(legend.text=element_text(size=15))
-
-
 #dev.off()
 
-
-
-
 ## Dsitribution
-
 
 prob_clust_DP1<-vector("numeric", length = 112)
 p_ks <-table(df_trace_wp_56$DP1)
@@ -204,13 +197,13 @@ lines(1:112,prob_clust_DP1, col="blue")
 lines(1:112,prob_clust_DP, col="black")
 
 DP1_post_clust_56<- prob_clust_DP1
-#save(DP1_post_clust_56, file="DP1_post_clust_56.Rdata")
+#save(DP1_post_clust_56, file= paste0(folderpath,"DP1_post_clust_56.Rdata"))
 
 prob_clust_PY_56<- prob_clust_PY
-#save(prob_clust_PY_56, file="prob_clust_PY_56.Rdata")
+#save(prob_clust_PY_56, file=paste0(folderpath,"prob_clust_PY_56.Rdata"))
 
 #prob_clustDP<- prob_clust_DP
-#save(prob_clustDP, file="prob_clustDP.Rdata")
+#save(prob_clustDP, file=paste0(folderpath, "prob_clustDP.Rdata"))
 
 #### Add prior/posterior plot
 prior_nu1 <- fit_gjamDP1$modelList$reductList$otherpar$shape
@@ -225,15 +218,13 @@ mean(x)
 
 ## CLuster estimates
 
-
-DP1_clust_full_56<- gjamClust2_full(model= fit_gjamDP1)
+DP1_clust_full_56<- gjamClust2_full(model= fit_gjamDP1,K= 16,true_clust =True_clust$K_n )
 #save(DP1_clust_full_56, file =  paste0(folderpath,"Clustering_gre_diff_sp_DP1_56.Rdata"))
 length(unique(DP1_clust_full_56$VI_est[[1]]))
 
 
-PY_clust_full_56<- gjamClust2_full(model= fit_gjamPY1)
+PY_clust_full_56<- gjamClust2_full(model= fit_gjamPY1,K= 16,true_clust =True_clust$K_n )
 #save(PY_clust_full_56, file =  paste0(folderpath,"Clustering_gre_diff_sp_PY_56.Rdata"))
-
 length(unique(PY_clust_full_56$VI_est[[3]]))
 
 
@@ -242,16 +233,11 @@ Clust2<- load_object("~/Documents/GitHub/GJAM_clust/PCA_analysis/r5/Clusters/Clu
 Clust2$CBN <- as.numeric(Clust2$CODE_CBNA)
 Clust2_sorted= Clust2[order(Clust2$CBN),]
 
-
-
 arandi(DP1_clust_full_56$VI_est[[3]],Clust2_sorted$ClustDP1)
 arandi(PY_clust_full_56$VI_est[[3]], Clust2_sorted$ClustPY1)
 
-
 WP_56_DP1<-tibble(Model="DP1",K=length(unique(DP1_clust_full_56$VI_est[[3]])),Dist_PFG = arandi(DP1_clust_full_56$VI_est[[3]], True_clust$K_n), Dist_CM = arandi(DP1_clust_full_56$VI_est[[3]], Clust2_sorted$ClustDP1))
-save(WP_56_DP1, file =  paste0(folderpath,"WP_56_DP1.Rdata"))
+#save(WP_56_DP1, file =  paste0(folderpath,"WP_56_DP1.Rdata"))
 WP_56_PY<- tibble(Model="PY",K=length(unique(PY_clust_full_56$VI_est[[3]])),Dist_PFG = arandi(PY_clust_full_56$VI_est[[3]], True_clust$K_n), Dist_CM = arandi(PY_clust_full_56$VI_est[[3]], Clust2_sorted$ClustPY1))
-save(WP_56_PY, file =  paste0(folderpath,"WP_56_PY.Rdata"))
-
-
+#save(WP_56_PY, file =  paste0(folderpath,"WP_56_PY.Rdata"))
 ##################################################################

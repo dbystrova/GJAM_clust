@@ -92,9 +92,9 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 ##Calibration table
 ##### ALpha posterior
 
-load("aDP16.Rdata")
-load("aDP1_8.Rdata")
-load("aDP1_56.Rdata")
+load("PCA_analysis/alpha/aDP16.Rdata")
+load("PCA_analysis/alpha/aDP1_8.Rdata")
+load("PCA_analysis/alpha/aDP1_56.Rdata")
 #"#3E4A89FF" 
 DF_alpha <- rbind(aDP1_8,aDP16,aDP1_56)
 DF_alpha$K_pr = factor(DF_alpha$K_pr, levels=c('K = 8','K = 16','K = 56'))

@@ -37,7 +37,7 @@ library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
-source("BNP_functions.R")
+source("R/BNP_functions.R")
 source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
@@ -74,11 +74,11 @@ K_prior=16
 r_reduct = 5
 
 folderpath="PCA_analysis/r5/DP1_analysis/"
-folderpath2="PCA_analysis/r5_2/"
-folderpath3="PCA_analysis/r5_3/"
-folderpath4="PCA_analysis/r5_4/"
-folderpath5="PCA_analysis/r5_5/"
-folderpath6="PCA_analysis/r5_6/"
+folderpath1="PCA_analysis/r5_models/chain_1/"
+folderpath2="PCA_analysis/r5_models/chain_2/"
+#folderpath4="PCA_analysis/r5_4/"
+#folderpath5="PCA_analysis/r5_5/"
+#folderpath6="PCA_analysis/r5_6/"
 
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
@@ -102,9 +102,15 @@ Colnames_Y$species <- ifelse(is.na(word(Colnames_Y$species, 1, 2)), Colnames_Y$s
 
 
 ## Load models 1st run
-fit_gjamDP1<- load_object(paste0(folderpath3,"fit_gjamDP1.Rdata"))
+#fit_gjamDP1<- load_object(paste0(folderpath3,"fit_gjamDP1.Rdata"))
 ## Load models 2nd run
-fit_gjamDP1_2<- load_object(paste0(folderpath4,"fit_gjamDP1.Rdata"))
+#fit_gjamDP1_2<- load_object(paste0(folderpath4,"fit_gjamDP1.Rdata"))
+
+
+## Load models 1st run
+fit_gjamDP1<- load_object(paste0(folderpath1,"fit_gjamDP1.Rdata"))
+## Load models 2nd run
+fit_gjamDP1_2<- load_object(paste0(folderpath2,"fit_gjamDP1.Rdata"))
 
 
 

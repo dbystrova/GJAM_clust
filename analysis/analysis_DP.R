@@ -36,7 +36,7 @@ library(GreedyEPL)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
-source("BNP_functions.R")
+source("R/BNP_functions.R")
 source('analysis/analysis_functions.R')
 load_object <- function(file) {
   tmp <- new.env()
@@ -70,15 +70,10 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 
 
-#iterations=1000
-#burn_period=300
 K_prior=16
 r_reduct = 5
 
 folderpath="PCA_analysis/r5/DP_analysis/"
-folderpath2="PCA_analysis/r5_2/"
-folderpath3="PCA_analysis/r5_3/"
-folderpath4="PCA_analysis/r5_4/"
 
 ##################################Species names and Functional groups #####################################
 #Preparing species functional groups 
@@ -99,9 +94,14 @@ Colnames_Y$species<- strtrim(Colnames_Y$species, 20)
 
 
 ## Load models 1st run
-fit_gjamDP<- load_object("PCA_analysis/r5_3/fit_gjam.Rdata")
+#fit_gjamDP<- load_object("PCA_analysis/r5_3/fit_gjam.Rdata")
 ## Load models 2nd run
-fit_gjamDP_2<- load_object("PCA_analysis/r5_4/fit_gjam.Rdata")
+#fit_gjamDP_2<- load_object("PCA_analysis/r5_4/fit_gjam.Rdata")
+
+fit_gjamDP<- load_object("PCA_analysis/r5_models/chain_1/fit_gjam.Rdata")
+## Load models 2nd run
+fit_gjamDP_2<- load_object("PCA_analysis/r5_models/chain_2/fit_gjam.Rdata")
+
 
 ########################################Prediction########################################################
 #Prediction out-of sample on xtest

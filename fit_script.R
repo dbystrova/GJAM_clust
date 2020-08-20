@@ -35,8 +35,8 @@ Rcpp::sourceCpp('src/user_fns.cpp')
 
 source("R/gjamHfunctions.R")
 source("R/gjam.R")
-source("BNP_functions.R")
-source("rlaptrans.r")
+source("R/BNP_functions.R")
+source("R/rlaptrans.r")
 
 load_object <- function(file) {
   tmp <- new.env()
