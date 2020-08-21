@@ -4,10 +4,7 @@ Readme
 Introduction
 ------------
 
-<<<<<<< HEAD
 In the dimension reduction approach in the GJAM model, the species are clustered in their dependence behavior. In the extended model we can use the prior knowledge on the number of clusters in the GJAM model and obtain the cluster estimates.
-=======
-
 
 Reproduce the results
 ---------------------
@@ -18,15 +15,12 @@ To reproduce the analysis results, there are two possibilites:
 2.  Download saved models from the following link [models](https://drive.google.com/open?id=1sRu7Q7rJ4aIYp-YCKOa_igA5Ofzc7tRH) and load the models in the folder "PCA analysis/r5\_models/chain\_1"(2) on your local repository
 
 The analysis results could be reproduced by the "analysis.R" script.
+**to run specifc functions for now use firstly script inlclude.R**
 
 How to use the functions
 ------------------------
 
-<<<<<<< HEAD
 Firstly, we describe the initial GJAM model and then describe how to specify the parameters for the prior. Full description of the GJAM model is provided in the GJAM package documentation and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
-=======
-Firstly, we describe the initial GJAM model and then describe how to specify the parameters for the prior. Full description of the GJAM model is provided in GJAM package documentation and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
->>>>>>> 39cfa6868e7ee4e1f295068b9eef186f5703d128
 
 Dimension reduction in GJAM model was proposed by \[Taylor et el 2018\]. Dimension reduction is used in two ways:
 
