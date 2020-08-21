@@ -227,6 +227,26 @@ compute_alpha_PYM<- function(H,n,sigma, Mat_prior, K){
 #axes3d()
 
 
+#################### Clustering functions
+
+
+
+
+gjamCluster<- function(model,  K, prior_clust =True_clust$K_n){
+  if("other" %in% colnames(model$inputs$y)){
+    sp_num<- ncol(model$inputs$y)-1
+  } 
+  LF_value<- c()
+  VI_list<- list()
+  MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
+  start_list<- list(1:(dim(MatDP)[2]), sample(1:K,dim(MatDP)[2],replace = TRUE), true_clust)
+  for (i in 1:length(start_list)){
+    DP_grEPL<- MinimiseEPL(MatDP, pars = list(decision_init=start_list[[i]], loss_type = "VI"))
+    VI_list<- list.append(VI_list, DP_grEPL$decision)
+    LF_value<- c(LF_value, DP_grEPL$EPL)
+  }
+  return(list( VI_est = VI_list, EPL_value = LF_value))
+}
 
 
 
