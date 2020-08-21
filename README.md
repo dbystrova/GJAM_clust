@@ -71,11 +71,11 @@ For the Pitman--Yor process as there are two parameters PY(*α*, *σ*), we spe
 
 **Table 1. Dimension reduction types**
 
-| `DRtype` | Process type | Parameters |           Priors on parameters           | Parameters to specify      |
-|:--------:|:------------:|:----------:|:----------------------------------------:|----------------------------|
-|   `'-'`  |   Dirichlet  |     *α*    |                   none                   | none                       |
-|   `'1'`  |   Dirichlet  |     *α*    | *G**a*(*ν*<sub>1</sub>, *ν*<sub>2</sub>) | prior number of clusters K |
-|   `'2'`  |  Pitman--Yor | (*α*, *σ*) |                   none                   | prior number of clusters K |
+| `DRtype` | Process type | Parameters |         Priors on parameters         | Parameters to specify      |
+|:--------:|:------------:|:----------:|:------------------------------------:|----------------------------|
+|   `'-'`  |   Dirichlet  |     *α*    |                 none                 | none                       |
+|   `'1'`  |   Dirichlet  |     *α*    | Ga(*ν*<sub>1</sub>, *ν*<sub>2</sub>) | prior number of clusters K |
+|   `'2'`  |  Pitman--Yor | (*α*, *σ*) |                 none                 | prior number of clusters K |
 
 More precisely on the values of the parameter `DRtype`:
 

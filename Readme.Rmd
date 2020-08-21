@@ -119,7 +119,7 @@ For the Pitman--Yor process as there are two parameters PY$(\alpha, \sigma)$, we
 `DRtype` | Process type  | Parameters | Priors on parameters| Parameters to specify
 :----: | :-------: | :----------: | :----------------------------: | -----------------
 `'-'`  | Dirichlet| $\alpha$ | none | none
-`'1'`  | Dirichlet| $\alpha$ | $Ga(\nu_1,\nu_2)$ | prior number of clusters K
+`'1'`  | Dirichlet| $\alpha$ | $\text{Ga}(\nu_1,\nu_2)$ | prior number of clusters K
 `'2'`  | Pitman--Yor | $(\alpha, \sigma)$ | none | prior number of clusters K
 
 
