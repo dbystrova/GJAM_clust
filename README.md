@@ -22,7 +22,7 @@ How to use the functions
 
 Firstly, we describe the initial GJAM model and then describe how to specify the parameters for the prior. Full description of the GJAM model is provided in the GJAM package documentation and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
 
-Dimension reduction in GJAM model was proposed by \[Taylor et el 2018\]. Dimension reduction is used in two ways:
+Dimension reduction in GJAM model was proposed by \[1\]. Dimension reduction is used in two ways:
 
 -   When dataset contains more species than can be fitted given sample size *n*.
 -   When the number of species *S* is too large.
@@ -117,3 +117,9 @@ This function return the values
 -   EPL\_value list of the loss function values for the given starting points
 
 The estimated cluster with the smallest EPL\_value best represent the posterior clustering distribution.
+
+References:
+
+[1] Taylor-Rodriguez, D., Kaufeld, K., Schliep, E. M., Clark, J. S., and Gelfand, A. E. (2017). Joint
+species distribution modeling: dimension reduction using Dirichlet processes. Bayesian Analysis 12,  939–967
+
