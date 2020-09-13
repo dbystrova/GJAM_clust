@@ -104,9 +104,7 @@ fit1<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml1)
 
 We get the `fit1` gjam object. This object is the same as the one from the original model, except several additional parameters.
 
-The function `gjjamCluster` estimates the optimal cluster,that summarize posterior cluster distribution. The function is build using the `GreedyEPL` package by
-*R**a**s**t**e**l**l**i**e**t**a**l*.
-. It takes as the input \* gjam object fitted model \* K possible number of clusters for initialization of greedy search algorithm
+The function `gjjamCluster` estimates the optimal cluster,that summarize posterior cluster distribution. The function is build using the `GreedyEPL` package by \[2\]. It takes as the input \* gjam object fitted model \* K possible number of clusters for initialization of greedy search algorithm
 \* Clustering used for prior specification
 
 -   last two options are used to set the initial clustering for the algorithm that estimate the optimal clustering.
@@ -122,4 +120,6 @@ References:
 
 [1] Taylor-Rodriguez, D., Kaufeld, K., Schliep, E. M., Clark, J. S., and Gelfand, A. E. (2017). Joint
 species distribution modeling: dimension reduction using Dirichlet processes. Bayesian Analysis 12,  939–967
+[2] Rastelli, R. and Friel, N., 2018. Optimal Bayesian estimators for latent variable cluster models.
+Statistics and computing, 28(6), pp.1169-1186.
 
