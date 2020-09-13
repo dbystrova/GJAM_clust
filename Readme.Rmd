@@ -50,17 +50,17 @@ In the extended model we can use the prior knowledge on the number of clusters i
 To reproduce the analysis results, there are two possibilites:
 
 1. Run the fit_script.R, which will run and save the models in the folder "PCA analysis". This option could be time consuming.
-2. Download saved models from the following link [models](https://drive.google.com/open?id=1sRu7Q7rJ4aIYp-YCKOa_igA5Ofzc7tRH)
+2. Download saved models from the following link [models](https://drive.google.com/drive/folders/1ck84t8Lc4oDFFET8S9TVwcM6yYusN85l?usp=sharing)
 and load the models in the folder "PCA analysis/r5_models/chain_1"(2) on your local repository
 
 The analysis results could be reproduced by the "analysis.R" script.  
-**to run specifc functions for now use firstly script inlclude.R**
+
 
 ## How to use the functions
 
 Firstly, we describe the initial GJAM model and then describe how to specify the parameters for the prior. Full description of the GJAM model is provided in the GJAM package documentation and [vignette](https://cran.r-project.org/web/packages/gjam/vignettes/gjamVignette.html)
 
-Dimension reduction in GJAM model was proposed by [Taylor et el 2018]. 
+Dimension reduction in GJAM model was proposed by \[1\]. 
 Dimension reduction is used in two ways:
 
 * When dataset contains more species than can be fitted given sample size $n$.\
@@ -112,58 +112,59 @@ In the `reducltList`
  * `DRtype` is the type of the Baysian nonparametric prior.
  * `K` is prior number of clusters
 
-For the Pitman--Yor process as there are two parameters PY$(\alpha, \sigma)$, we specify the desired value of  $\sigma \in (0,1)$. (in the current implementation).
+For the Pitman--Yor process as there are two parameters PY(*α*, *σ*), we specify the desired value of *σ* ∈ (0, 1). (in the current implementation).
 
 **Table 1. Dimension reduction types**
 
-`DRtype` | Process type  | Parameters | Priors on parameters| Parameters to specify
-:----: | :-------: | :----------: | :----------------------------: | -----------------
-`'-'`  | Dirichlet| $\alpha$ | none | none
-`'1'`  | Dirichlet| $\alpha$ | $\text{Ga}(\nu_1,\nu_2)$ | prior number of clusters K
-`'2'`  | Pitman--Yor | $(\alpha, \sigma)$ | none | prior number of clusters K
-
+| `DRtype` | Process type | Parameters |         Priors on parameters         | Parameters to specify      |
+|:--------:|:------------:|:----------:|:------------------------------------:|----------------------------|
+|   `'-'`  |   Dirichlet  |     *α*    |                 none                 | none                       |
+|   `'1'`  |   Dirichlet  |     *α*    | Ga(*ν*<sub>1</sub>, *ν*<sub>2</sub>) | prior number of clusters K |
+|   `'2'`  |  Pitman--Yor | (*α*, *σ*) |                 none                 | prior number of clusters K |
 
 More precisely on the values of the parameter `DRtype`:
 
-  * No value specified, then the model will use standard dimension reduction approach.
-  * `1` is the dimension reduction with the Dirichlet process and prior distribution on the concentration parameter $\alpha$
-  * `2` is the dimension reduction with the Pitman--Yor process with fixed parameters $\alpha$ and $\sigma$. 
+-   No value specified, then the model will use standard dimension reduction approach.
+-   `1` is the dimension reduction with the Dirichlet process and prior distribution on the concentration parameter *α*
+-   `2` is the dimension reduction with the Pitman--Yor process with fixed parameters *α* and *σ*.
 
-For the example, in the **Bauges plant dataset ** , we take as a prior number of plant functional groups which is $16$.  If we want to take the Dirichlet process, then we use the following parameters for the `reductList`. Here, `DRtype =1`.   The choice of $N$ is equal to $S$ is natural, as we consider any possible clustering and $K$ is prior number of clusters.
- 
-```{r fit DR1, include=TRUE, echo=TRUE, warning=FALSE,eval = F}
+For the example, in the **Bauges plant dataset ** , we take as a prior number of plant functional groups which is 16. If we want to take the Dirichlet process, then we use the following parameters for the `reductList`. Here, `DRtype =1`. The choice of *N* is equal to *S* is natural, as we consider any possible clustering and *K* is prior number of clusters.
+
+``` r
 rl1  <- list(r = r_reduct, N = S ,DRtype="1", K=16)  #prior is number of plant functional groups
 ```
 
-For the Pitman--Yor process .Here, `DRtype =2` and we specify `K`,and value of  $\sigma =0.5$  and the choice of $N$ is the same. 
+For the Pitman--Yor process .Here, `DRtype =2` and we specify `K`,and value of *σ* = 0.5 and the choice of *N* is the same.
 
-```{r fit PY1, include=TRUE, echo=TRUE, warning=FALSE,eval = F}
+``` r
 rl2  <- list(r = r_reduct, N = S ,DRtype="2", K=16)  #prior is number of plant functional groups
 ```
 
 For instance, we fit the model with the first specification
 
-```{r fit_all, include=TRUE, echo=TRUE, warning=FALSE,eval = F}
+``` r
 ml1   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl1,PREDICTX = F)
 fit1<-gjam(formula, xdata = X_data, ydata = Y_data, modelList = ml1)
 ```
 
-
 We get the `fit1` gjam object. This object is the same as the one from the original model, except several additional parameters.
 
-The function `gjjamCluster` estimates the optimal cluster,that summarize posterior cluster distribution. The function is build using the `GreedyEPL` package by \[Rastelli et al.\]. It takes as the input 
-*  gjam object fitted model
- * K possible number of clusters for initialization of greedy search algorithm  
- * Clustering used for prior specification
- 
-* last two options are used to set the initial clustering for the algorithm that estimate the optimal clustering.
- 
-This function return the values  
+The function `gjjamCluster` estimates the optimal cluster,that summarize posterior cluster distribution. The function is build using the `GreedyEPL` package by \[2\]. It takes as the input \* gjam object fitted model \* K possible number of clusters for initialization of greedy search algorithm
+\* Clustering used for prior specification
 
- * VI_list list of the estimated clusters, corresponding to the given starting points
- * EPL_value  list of the loss function values for the given starting points
+-   last two options are used to set the initial clustering for the algorithm that estimate the optimal clustering.
 
-The estimated cluster with the smallest EPL_value  best represent the posterior clustering distribution.
-```{r cluster, include=TRUE, echo=TRUE, warning=FALSE, eval=F}
-```
+This function return the values
 
+-   VI\_list list of the estimated clusters, corresponding to the given starting points
+-   EPL\_value list of the loss function values for the given starting points
+
+The estimated cluster with the smallest EPL\_value best represent the posterior clustering distribution.
+
+References:
+
+[1] Taylor-Rodriguez, D., Kaufeld, K., Schliep, E. M., Clark, J. S., and Gelfand, A. E. (2017). Joint
+species distribution modeling: dimension reduction using Dirichlet processes. Bayesian Analysis 12,  939–967
+
+[2] Rastelli, R. and Friel, N., 2018. Optimal Bayesian estimators for latent variable cluster models.
+Statistics and computing, 28(6), pp.1169-1186.
