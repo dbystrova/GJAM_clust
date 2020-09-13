@@ -120,6 +120,7 @@ References:
 
 [1] Taylor-Rodriguez, D., Kaufeld, K., Schliep, E. M., Clark, J. S., and Gelfand, A. E. (2017). Joint
 species distribution modeling: dimension reduction using Dirichlet processes. Bayesian Analysis 12,  939–967
+
 [2] Rastelli, R. and Friel, N., 2018. Optimal Bayesian estimators for latent variable cluster models.
 Statistics and computing, 28(6), pp.1169-1186.
 
