@@ -63,10 +63,11 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 iterations=80000
 burn_period=30000
-K_prior=16
+K_prior=56
 r_reduct = 5
 
-folderpath="PCA_analysis/test/"
+#folderpath="PCA_analysis/test/"
+folderpath="PCA_analysis/r_wp/wp_56/models/chain_2/"
 
 
 rl <- list(r =r_reduct, N = S)
@@ -86,28 +87,16 @@ save(fit_gjamDP1, file =paste0(folderpath,"fit_gjamDP1.Rdata"))
 ##################################################################################################
 # PYM
 
-load("IJulia_part/Cnk_mat_112_05.Rdata")
-load("IJulia_part/Cnk_mat_112_H05.Rdata")
-par = compute_alpha_PYM(H=112,n=112,sigma=0.5,Mat_prior= Cnk_112_112_H05, K=K_prior)
-rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.5,K=K_prior, Precomp_mat=Cnk_112_112_05)
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_05.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H05.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_H08.Rdata")
+load("IJulia_part/C_nk_matrix/Cnk_mat_112_08.Rdata")
+
+par = compute_alpha_PYM(H=112,n=112,sigma=0.8,Mat_prior= Cnk_112_112_H08, K=K_prior)
+rl2   <- list(r = r_reduct, DRtype="2" ,N=112, alpha_py=par,sigma_py=0.8,K=K_prior, Precomp_mat=Cnk_112_112_08)
 ml2   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl2,PREDICTX = F)
 fit_gjamPY1<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml2)
 
 save(fit_gjamPY1, file =paste0(folderpath,"fit_gjamPY1.Rdata"))
 
 ##################################################################################################
-# PY_SB
-#rl3   <- list(r = r_reduct, DRtype="3" ,sigma_py=0.25,K=K_prior)
-#ml3   <- list(ng = iterations, burnin = burn_period, typeNames = 'PA', reductList = rl3,PREDICTX = F)
-#fit_gjamPY2<-gjam(formula, xdata = xdata_train, ydata = Ydata_train, modelList = ml3)
-
-
-#save(fit_gjamPY2, file =paste0(folderpath,"fit_gjamPY2.Rdata"))
-
-########
-
-
-
-
-
-

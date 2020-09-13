@@ -1,7 +1,7 @@
 #PCA Plot
 
 
-setwd("~/Documents/GitHub/GJAMF/gjam 4/")
+#setwd("~/Documents/GitHub/GJAM_clust")
 #rm(list=ls())
 library(repmis)
 library(gjam)
@@ -60,6 +60,8 @@ folder.name="Bauges"
 zone.name="ENV_VARIABLES"
 zone.env.folder="EOBS_1970_2005"
 zone.env.variables=c("bio_1_0","bio_12_0","bio_19_0","bio_8_0","slope")
+#covariates used: annual mean temperature, annual precipitatin, precipitatin of the coldest quarter
+#mean temperature of the wettest quarter, slope
 
 ##function from the package FATEHD
 getSDM_env = function(zone.name, zone.env.folder, zone.env.variables, maskSimul)
@@ -121,7 +123,7 @@ env_data_P<- PA_envf[,1:6]
 duplicated_env<- env_data_P[,2:6] %>% duplicated()
 env_data_dup<- env_data_P[duplicated_env,2:6] #226 dup covariates
 env_data_nodup<- env_data_P[!duplicated_env,2:6] #>200 dup covariates
-
+#names(env_data_nodup)<- c( "bio_1","bio_12","bio_19","bio_8","slope")
 
 
 env.pca <- princomp(as.data.frame(apply(env_data_nodup,MARGIN=2, scale)))
@@ -129,7 +131,8 @@ fviz_eig(env.pca)
 pca_plot<- fviz_pca_var(env.pca,
              col.var = "contrib", # Color by contributions to the PC
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             repel = TRUE)
+             repel = TRUE, 
+             title="")
 
 
 pdf(file = "Plots/PCA_plot.pdf", width=6, height =4)

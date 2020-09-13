@@ -230,16 +230,38 @@ compute_alpha_PYM<- function(H,n,sigma, Mat_prior, K){
 #################### Clustering functions
 
 
+relabel_clust<- function(Mat ){
+  Mat_new<- matrix(NA, nrow=nrow(Mat),ncol=ncol(Mat))
+  for(i in 1:nrow(Mat) ){
+    label<-unique(Mat[i,])
+    change<- label[which(label>ncol(Mat))]
+    all_n<- 1:ncol(Mat)
+    admis<- all_n[which(!(all_n %in% label))]
+    Mat_new[i,]<-Mat[i,]
+    if(length(change)>0){
+      for(k in 1:length(change)){
+        old_row<- Mat_new[i,]
+        rep <-old_row==change[k]
+        Mat_new[i,] <- replace(Mat_new[i,], rep, admis[k])
+      }
+    }
+  }
+  return(Mat_new)
+}
+
 
 
 gjamCluster<- function(model,  K, prior_clust =True_clust$K_n){
   if("other" %in% colnames(model$inputs$y)){
     sp_num<- ncol(model$inputs$y)-1
   } 
+  else {
+    sp_num<- ncol(model$inputs$y)
+  }
   LF_value<- c()
   VI_list<- list()
   MatDP<- relabel_clust(model$chains$kgibbs[(model$modelList$burnin+1):model$modelList$ng,1:sp_num])
-  start_list<- list(1:(dim(MatDP)[2]), sample(1:K,dim(MatDP)[2],replace = TRUE), true_clust)
+  start_list<- list(1:(dim(MatDP)[2]), sample(1:K,dim(MatDP)[2],replace = TRUE), prior_clust)
   for (i in 1:length(start_list)){
     DP_grEPL<- MinimiseEPL(MatDP, pars = list(decision_init=start_list[[i]], loss_type = "VI"))
     VI_list<- list.append(VI_list, DP_grEPL$decision)

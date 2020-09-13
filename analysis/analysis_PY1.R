@@ -71,7 +71,6 @@ formula <- as.formula( ~   PC1  + PC2 + I(PC1^2) + I(PC2^2))
 
 K_prior=16
 r_reduct = 5
-
 folderpath="PCA_analysis/r5/PY_analysis/"
 folderpath1="PCA_analysis/r5_models/chain_1/"
 folderpath2="PCA_analysis/r5_models/chain_2/"
